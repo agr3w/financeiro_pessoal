@@ -1,68 +1,65 @@
-import React, {useContext} from 'react';
-import { 
-  Card, CardHeader, CardContent, List, ListItem, 
-  ListItemAvatar, Avatar, ListItemText, Typography, Divider, Box 
-} from '@mui/material';
-import { Fastfood, ShoppingBag, LocalGasStation, Work, Payment } from '@mui/icons-material';
+import React, { useContext } from 'react';
+import { Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Box } from '@mui/material';
+import { Fastfood, ShoppingBag, LocalGasStation, Bolt, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import { FinanceContext } from '../../context/FinanceContext';
+import { useTheme } from '@mui/material/styles';
 
-// Dados falsos só para visualizar a estrutura
-const MOCK_TRANSACTIONS = [
-  { id: 1, label: 'Mercado Semanal', amount: -450.00, date: 'Hoje, 10:30', category: 'food' },
-  { id: 2, label: 'Freela Design', amount: 1200.00, date: 'Ontem, 14:00', category: 'income' },
-  { id: 3, label: 'Gasolina', amount: -200.00, date: '18/01', category: 'transport' },
-];
-
-const getIcon = (category) => {
-  switch(category) {
-    case 'food': return <Fastfood />;
-    case 'transport': return <LocalGasStation />;
-    case 'income': return <Work />;
-    default: return <ShoppingBag />;
-  }
+const getIconData = (category, theme) => {
+  // Mapeamento simples de ícones e cores do nosso tema
+  const map = {
+    'Alimentação': { icon: <Fastfood />, color: theme.palette.custom.orange, text: theme.palette.custom.orangeText },
+    'Transporte': { icon: <LocalGasStation />, color: theme.palette.custom.purple, text: theme.palette.custom.purpleText },
+    'Compras': { icon: <ShoppingBag />, color: theme.palette.custom.pink, text: theme.palette.custom.pinkText },
+    'Contas': { icon: <Bolt />, color: theme.palette.custom.green, text: theme.palette.custom.greenText },
+  };
+  return map[category] || { icon: <ShoppingBag />, color: '#eee', text: '#555' };
 };
 
 export default function TransactionList() {
   const { transactions } = useContext(FinanceContext);
+  const theme = useTheme();
 
   return (
-    <Card sx={{ borderRadius: 3, height: '100%' }}>
-      <CardHeader title="Últimas Movimentações" />
-      <Divider />
-      <CardContent sx={{ p: 0 }}>
-        <List>
-          {transactions.map((item, index) => (
-            <React.Fragment key={item.id}>
-              <ListItem alignItems="flex-start">
-                <ListItemAvatar>
-                  <Avatar sx={{ 
-                    bgcolor: item.amount > 0 ? '#e8f5e9' : '#ffebee', 
-                    color: item.amount > 0 ? '#2e7d32' : '#c62828' 
-                  }}>
-                    {getIcon(item.category)}
-                  </Avatar>
-                </ListItemAvatar>
-                
-                <ListItemText
-                  primary={item.label}
-                  secondary={item.date instanceof Date ? item.date.toLocaleDateString('pt-BR') : item.date}
-                  primaryTypographyProps={{ fontWeight: 500 }}
-                />
-                
+    <Paper sx={{ p: 0, bgcolor: 'transparent', border: 'none', boxShadow: 'none' }}>
+      <List sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        {transactions.map((item) => {
+          const style = getIconData(item.category, theme);
+          const isExpense = item.type === 'expense';
+
+          return (
+            <ListItem 
+              key={item.id} 
+              sx={{ 
+                bgcolor: 'background.paper', // Branco
+                borderRadius: 2, 
+                py: 2,
+                boxShadow: '0px 2px 8px rgba(0,0,0,0.02)' // Sombra ultra leve
+              }}
+            >
+              <ListItemAvatar>
+                <Avatar sx={{ bgcolor: style.color, color: style.text, borderRadius: 3 }}>
+                  {style.icon}
+                </Avatar>
+              </ListItemAvatar>
+              
+              <ListItemText
+                primary={<Typography variant="subtitle1" fontWeight="bold">{item.label}</Typography>}
+                secondary={new Date(item.date).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'})}
+              />
+              
+              <Box textAlign="right">
                 <Typography 
                   variant="body1" 
                   fontWeight="bold"
-                  color={item.amount > 0 ? 'success.main' : 'error.main'}
-                  sx={{ alignSelf: 'center' }}
+                  sx={{ color: isExpense ? 'error.main' : 'success.main', display: 'flex', alignItems: 'center', gap: 0.5 }}
                 >
-                  {item.amount > 0 ? '+' : ''} R$ {Math.abs(item.amount).toFixed(2)}
+                  {isExpense ? '-' : '+'} R$ {Math.abs(item.amount).toFixed(2)}
                 </Typography>
-              </ListItem>
-              {index < transactions.length - 1 && <Divider variant="inset" component="li" />}
-            </React.Fragment>
-          ))}
-        </List>
-      </CardContent>
-    </Card>
+              </Box>
+            </ListItem>
+          )
+        })}
+      </List>
+    </Paper>
   );
 }

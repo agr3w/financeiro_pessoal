@@ -29,7 +29,7 @@ export default function DashboardStats() {
     <Grid container spacing={3}>
       
       {/* 1. VISÃO GERAL (Tabela Lilás) */}
-      <Grid item xs={12} md={4}>
+      <Grid size={{ xs: 12, md: 4 }}>
         <Paper 
           elevation={0} 
           sx={{ 
@@ -69,12 +69,13 @@ export default function DashboardStats() {
       </Grid>
 
       {/* 2. VALOR PARA GASTAR (Gráfico Rosca Central) */}
-      <Grid item xs={12} md={4}>
+      <Grid size={{ xs: 12, md: 4 }}>
         <Paper elevation={0} sx={{ p: 2, height: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography variant="overline" letterSpacing={2}>SALDO DISPONÍVEL</Typography>
           
-          <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
-            <ResponsiveContainer>
+          {/* Adicionado minWidth: 0 para evitar colapso do flex item */}
+          <Box sx={{ width: '100%', height: 200, position: 'relative', minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={remainingData}
@@ -98,13 +99,13 @@ export default function DashboardStats() {
       </Grid>
 
       {/* 3. CATEGORIAS DE GASTOS (Gráfico Pizza Direita) */}
-      <Grid item xs={12} md={4}>
+      <Grid size={{ xs: 12, md: 4 }}>
         <Paper elevation={0} sx={{ p: 2, height: '100%', borderRadius: 2 }}>
           <Typography variant="overline" letterSpacing={2} align="center" display="block">
             POR CATEGORIA
           </Typography>
-          <Box sx={{ width: '100%', height: 200 }}>
-            <ResponsiveContainer>
+          <Box sx={{ width: '100%', height: 200, minWidth: 0 }}>
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={categoryData} cx="50%" cy="50%" outerRadius={80} dataKey="value">
                   {categoryData.map((entry, index) => (

@@ -165,7 +165,7 @@ export default function QuickAddFab() {
                 {categories.map((cat) => {
                   const isSelected = category === cat.id;
                   return (
-                    <Grid item xs={4} key={cat.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Grid size={{ xs: 4 }} key={cat.id} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <Box 
                         onClick={() => setCategory(cat.id)}
                         sx={{ 
