@@ -85,6 +85,52 @@ export const FinanceProvider = ({ children }) => {
     ]);
   };
 
+  // 1. Função Inteligente para criar Planos Parcelados
+  const addRecurringPlan = (planData) => {
+    /* planData espera: { 
+         title: "Notebook", 
+         totalAmount: 3000, 
+         installmentsCount: 10, 
+         startDate: "2026-02-15",
+         category: "Compras"
+       }
+    */
+
+    const installmentValue = planData.totalAmount / planData.installmentsCount;
+    const newInstallments = [];
+    const start = new Date(planData.startDate);
+
+    // Loop para gerar as N parcelas
+    for (let i = 0; i < planData.installmentsCount; i++) {
+        // Clona a data para não alterar a referência
+        const date = new Date(start);
+        // Adiciona 'i' meses na data inicial (Lógica de Mês Seguinte)
+        date.setMonth(start.getMonth() + i);
+
+        newInstallments.push({
+            number: i + 1,
+            amount: installmentValue,
+            dueDate: date,
+            paid: false
+        });
+    }
+
+    const newPlan = {
+        id: Date.now(), // ID único
+        title: planData.title,
+        totalDebt: parseFloat(planData.totalAmount),
+        category: planData.category,
+        installments: newInstallments
+    };
+
+    setLoanPlans(prev => [...prev, newPlan]);
+  };
+
+  // 2. Função para Remover um Plano (Caso tenha errado)
+  const deletePlan = (planId) => {
+    setLoanPlans(prev => prev.filter(p => p.id !== planId));
+  };
+
   const payInstallment = (loanId, installmentNumber) => {
     // 1. Atualiza o Plano de Empréstimo (Marca parcela como paga)
     setLoanPlans(prevPlans => prevPlans.map(plan => {
@@ -120,7 +166,9 @@ export const FinanceProvider = ({ children }) => {
       income: monthIncome, 
       expense: monthExpense, 
       addTransaction, 
-      payInstallment 
+      payInstallment,
+      addRecurringPlan, // <--- Novo
+      deletePlan // <--- Novo
     }}>
       {children}
     </FinanceContext.Provider>

@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { Container, Grid, Typography, Box, Avatar, IconButton } from '@mui/material';
+import React, { useContext, useState } from 'react'; // Importe useState
+import { Container, Grid, Typography, Box, Avatar, IconButton, Button } from '@mui/material'; // Adicione Button
 import { NotificationsNone } from '@mui/icons-material';
 import DashboardStats from '../../sections/finance/DashboardStats';
 import CashFlowTable from '../../sections/finance/CashFlowTable';
@@ -7,13 +7,17 @@ import LoanTracker from '../../sections/finance/LoanTracker';
 import TransactionList from '../../sections/finance/TransactionList';
 import QuickAddFab from '../../sections/finance/QuickAddFab';
 import { FinanceContext } from '../../context/FinanceContext';
-import MonthSelector from '../../components/ui/MonthSelector'; // Importe o novo componente
+import MonthSelector from '../../components/ui/MonthSelector'; 
+import AddPlanModal from '../../components/organisms/AddPlanModal'; // Importe o Modal
 
 export default function Dashboard() {
   const { 
     loans, payInstallment, 
-    selectedDate, setSelectedDate // Pegamos do contexto
+    selectedDate, setSelectedDate 
   } = useContext(FinanceContext);
+
+  // Estado para controlar o modal
+  const [isPlanModalOpen, setPlanModalOpen] = useState(false);
 
   return (
     <Box sx={{ minHeight: '100vh', pb: 10 }}> {/* O fundo vem do theme */}
@@ -55,13 +59,31 @@ export default function Dashboard() {
               <CashFlowTable />
 
               <Box>
-                <Typography variant="h5" sx={{ mb: 2 }}>Contas Fixas</Typography>
+                {/* CABEÇALHO DA SEÇÃO COM BOTÃO DE ADICIONAR */}
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="h5">Contas Fixas</Typography>
+                  <Button 
+                    variant="outlined" 
+                    size="small" 
+                    onClick={() => setPlanModalOpen(true)}
+                    sx={{ borderRadius: 4, borderColor: '#ddd', color: '#666', textTransform: 'none' }}
+                  >
+                    + Novo Parcelamento
+                  </Button>
+                </Box>
+
                 <Grid container spacing={2}>
-                  {loans.map(loan => (
-                    <Grid size={{ xs: 12, md: 6 }} key={loan.id}>
-                      <LoanTracker loan={loan} onPay={payInstallment} />
-                    </Grid>
-                  ))}
+                  {loans.length > 0 ? (
+                    loans.map(loan => (
+                      <Grid size={{ xs: 12, md: 6 }} key={loan.id}>
+                        <LoanTracker loan={loan} onPay={payInstallment} />
+                      </Grid>
+                    ))
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ pl: 2, fontStyle: 'italic', width: '100%' }}>
+                      Nenhuma conta fixa para este mês.
+                    </Typography>
+                  )}
                 </Grid>
               </Box>
             </Box>
@@ -77,6 +99,13 @@ export default function Dashboard() {
       </Container>
 
       <QuickAddFab />
+
+      {/* O MODAL FICA AQUI */}
+      <AddPlanModal 
+        open={isPlanModalOpen} 
+        onClose={() => setPlanModalOpen(false)} 
+      />
+
     </Box>
   );
 }
