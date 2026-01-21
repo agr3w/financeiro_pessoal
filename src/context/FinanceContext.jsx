@@ -3,83 +3,122 @@ import React, { createContext, useState, useEffect } from 'react';
 export const FinanceContext = createContext();
 
 export const FinanceProvider = ({ children }) => {
-  // 1. Estado das Transações (Começa com alguns dados de exemplo)
-  const [transactions, setTransactions] = useState([
-    { id: 1, label: 'Salário', amount: 3500, type: 'income', category: 'bills', date: new Date() },
-    { id: 2, label: 'Mercado', amount: 450, type: 'expense', category: 'food', date: new Date() },
+  // 1. Estado Global de Data (Começa hoje)
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // 2. Banco de Transações "Infinito" (No futuro virá do Firebase)
+  const [allTransactions, setAllTransactions] = useState([
+    // Exemplo: Salário de Janeiro
+    { id: 1, label: 'Salário', amount: 3500, type: 'income', category: 'Salário', date: new Date(2026, 0, 5) }, // Jan
+    // Exemplo: Mercado em Fevereiro (Simulando futuro)
+    { id: 2, label: 'Mercado Futuro', amount: 600, type: 'expense', category: 'Alimentação', date: new Date(2026, 1, 10) }, // Fev
   ]);
 
-  // 2. Estado dos Empréstimos (Baseado no seu desenho)
-  const [loans, setLoans] = useState([
+  // 3. Banco de Planos Recorrentes (Empréstimos/Parcelados)
+  // Estrutura inteligente: O 'installments' diz exatamente quando vence cada parcela
+  const [loanPlans, setLoanPlans] = useState([
     { 
       id: 'loan_nubank', 
       title: 'Empréstimo Nubank', 
-      totalDebt: 900, 
-      paidAmount: 0, 
-      nextDueDate: '01/02',
-      nextInstallmentValue: 250 
+      totalDebt: 1000, 
+      installments: [
+        { number: 1, amount: 250, dueDate: new Date(2026, 0, 20), paid: false }, // Jan
+        { number: 2, amount: 250, dueDate: new Date(2026, 1, 20), paid: false }, // Fev
+        { number: 3, amount: 250, dueDate: new Date(2026, 2, 20), paid: false }, // Mar
+        { number: 4, amount: 250, dueDate: new Date(2026, 3, 20), paid: false }, // Abr
+      ]
     }
   ]);
 
-  const [balance, setBalance] = useState(0);
-  const [income, setIncome] = useState(0);
-  const [expense, setExpense] = useState(0);
+  // --- ESTADOS COMPUTADOS (O que aparece na tela) ---
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [monthBalance, setMonthBalance] = useState(0);
+  const [monthIncome, setMonthIncome] = useState(0);
+  const [monthExpense, setMonthExpense] = useState(0);
+  const [monthLoans, setMonthLoans] = useState([]); // Parcelas DO MÊS
 
-  // 3. Recalcula Saldo automaticamente sempre que houver mudança
+  // Função Auxiliar: Verifica se duas datas são do mesmo mês/ano
+  const isSameMonth = (d1, d2) => {
+    return d1.getMonth() === d2.getMonth() && d1.getFullYear() === d2.getFullYear();
+  };
+
+  // EFEITO: Sempre que mudar a DATA ou as TRANSAÇÕES, recalcula tudo
   useEffect(() => {
-    const inc = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0);
-    const exp = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0);
+    // A. Filtra Transações Avulsas
+    const currentTrans = allTransactions.filter(t => isSameMonth(new Date(t.date), selectedDate));
     
-    setIncome(inc);
-    setExpense(exp);
-    setBalance(inc - exp);
-  }, [transactions]);
+    // B. Processa Empréstimos para o mês selecionado
+    // Transformamos o "Plano" em uma "Visualização de Parcela"
+    const currentLoans = loanPlans.map(plan => {
+      const installment = plan.installments.find(inst => isSameMonth(new Date(inst.dueDate), selectedDate));
+      
+      if (!installment) return null; // Esse empréstimo não tem parcela neste mês
+
+      return {
+        ...plan, // Dados gerais (Titulo)
+        currentInstallment: installment, // Dados específicos deste mês (Valor, Pago?)
+        isPaid: installment.paid // Atalho visual
+      };
+    }).filter(Boolean); // Remove os nulos
+
+    // C. Calcula Totais
+    const inc = currentTrans.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);
+    const exp = currentTrans.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0);
+    
+    setFilteredTransactions(currentTrans);
+    setMonthLoans(currentLoans);
+    setMonthIncome(inc);
+    setMonthExpense(exp);
+    setMonthBalance(inc - exp);
+
+  }, [selectedDate, allTransactions, loanPlans]);
 
   // --- AÇÕES ---
 
-  // Adicionar Transação Simples
-  const addTransaction = (newTransaction) => {
-    setTransactions(prev => [
-      { ...newTransaction, id: Date.now(), date: new Date() }, 
+  const addTransaction = (data) => {
+    // Se a transação não tiver data, usa a data selecionada no calendário
+    const transactionDate = data.date || selectedDate;
+    
+    setAllTransactions(prev => [
+      { ...data, id: Date.now(), date: transactionDate }, 
       ...prev
     ]);
   };
 
-  // Pagar Parcela (A INTEGRAÇÃO INTELIGENTE)
-  const payInstallment = (loanId) => {
-    // 1. Achar o empréstimo
-    const loanIndex = loans.findIndex(l => l.id === loanId);
-    const loan = loans[loanIndex];
+  const payInstallment = (loanId, installmentNumber) => {
+    // 1. Atualiza o Plano de Empréstimo (Marca parcela como paga)
+    setLoanPlans(prevPlans => prevPlans.map(plan => {
+      if (plan.id !== loanId) return plan;
 
-    if (!loan) return;
+      const newInstallments = plan.installments.map(inst => {
+        if (inst.number === installmentNumber) return { ...inst, paid: true };
+        return inst;
+      });
 
-    // 2. Atualizar o empréstimo (aumentar o pago)
-    const updatedLoans = [...loans];
-    updatedLoans[loanIndex] = {
-      ...loan,
-      paidAmount: loan.paidAmount + loan.nextInstallmentValue,
-      // Lógica simples para jogar a data pra frente (mock)
-      nextDueDate: '01/03' 
-    };
-    setLoans(updatedLoans);
+      return { ...plan, installments: newInstallments };
+    }));
 
-    // 3. O PULO DO GATO: Criar a transação de despesa automaticamente
+    // 2. Gera a transação de saída no extrato
+    const plan = loanPlans.find(p => p.id === loanId);
+    const installment = plan.installments.find(i => i.number === installmentNumber);
+    
     addTransaction({
-      label: `Parcela ${loan.title}`,
-      amount: loan.nextInstallmentValue,
+      label: `Parcela ${installmentNumber} - ${plan.title}`,
+      amount: installment.amount,
       type: 'expense',
-      category: 'bills', // Categoria Contas
-      date: new Date()
+      category: 'Contas',
+      date: selectedDate // Importante: Usa a data que estamos olhando
     });
   };
 
   return (
     <FinanceContext.Provider value={{ 
-      transactions, 
-      loans, 
-      balance, 
-      income, 
-      expense, 
+      selectedDate, setSelectedDate, // Exporta o controle de data
+      transactions: filteredTransactions, // Exporta JÁ FILTRADO
+      loans: monthLoans, // Exporta JÁ FILTRADO
+      balance: monthBalance, 
+      income: monthIncome, 
+      expense: monthExpense, 
       addTransaction, 
       payInstallment 
     }}>

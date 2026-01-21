@@ -1,47 +1,45 @@
 import React from 'react';
-import { Card, CardContent, Typography, LinearProgress, Box, Button } from '@mui/material';
+import { Card, CardContent, Typography, LinearProgress, Box, Button, Chip } from '@mui/material';
+import { CheckCircle, Schedule } from '@mui/icons-material';
 
 export default function LoanTracker({ loan, onPay }) {
-  // Recebe 'loan' (dados) e 'onPay' (função) via props
-
-  const progress = (loan.paidAmount / loan.totalDebt) * 100;
-  const remaining = loan.totalDebt - loan.paidAmount;
+  // loan agora contém: { title, totalDebt, currentInstallment: { number, amount, paid, dueDate } }
+  
+  const { currentInstallment } = loan;
 
   return (
-    <Card variant="outlined" sx={{ borderRadius: 3, mb: 2 }}>
+    <Card sx={{ mb: 2, borderRadius: 3, border: '1px solid #f0f0f0' }}>
       <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
           <Typography variant="h6" fontWeight="bold">{loan.title}</Typography>
-          <Typography variant="body2" color="error">
-            R$ {remaining.toFixed(2)} restantes
-          </Typography>
+          {/* Status Visual */}
+          {currentInstallment.paid ? (
+            <Chip icon={<CheckCircle />} label="Paga" color="success" size="small" variant="outlined" />
+          ) : (
+            <Chip icon={<Schedule />} label="Pendente" color="warning" size="small" variant="outlined" />
+          )}
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', mt: 2, mb: 2 }}>
-          <Box sx={{ width: '100%', mr: 1 }}>
-            <LinearProgress variant="determinate" value={progress} />
-          </Box>
-          <Typography variant="body2">{Math.round(progress)}%</Typography>
-        </Box>
-
-        <Box display="flex" justifyContent="space-between" sx={{ mt: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+        <Box display="flex" justifyContent="space-between" sx={{ mt: 2, p: 2, bgcolor: '#fafafa', borderRadius: 3 }}>
           <Box>
-            <Typography variant="caption">Vencimento</Typography>
-            <Typography variant="body1" fontWeight="bold">{loan.nextDueDate}</Typography>
+            <Typography variant="caption" color="text.secondary">Vencimento</Typography>
+            <Typography variant="body1" fontWeight="bold">
+              {new Date(currentInstallment.dueDate).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}
+            </Typography>
           </Box>
           <Box>
-            <Typography variant="caption">Valor</Typography>
-            <Typography variant="body1" fontWeight="bold">R$ {loan.nextInstallmentValue}</Typography>
+             <Typography variant="caption" color="text.secondary">Parcela {currentInstallment.number}</Typography>
+             <Typography variant="body1" fontWeight="bold">R$ {currentInstallment.amount.toFixed(2)}</Typography>
           </Box>
-
-          {/* O Botão que dispara tudo */}
-          <Button
-            size="small"
-            variant="contained"
-            onClick={() => onPay(loan.id)}
-            disabled={remaining <= 0}
+          
+          <Button 
+            size="small" 
+            variant="contained" 
+            onClick={() => onPay(loan.id, currentInstallment.number)} 
+            disabled={currentInstallment.paid} // Desabilita se já pagou
+            sx={{ borderRadius: 4, px: 3 }}
           >
-            Pagar
+            {currentInstallment.paid ? 'OK' : 'Pagar'}
           </Button>
         </Box>
       </CardContent>

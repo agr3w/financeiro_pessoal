@@ -7,9 +7,13 @@ import LoanTracker from '../../sections/finance/LoanTracker';
 import TransactionList from '../../sections/finance/TransactionList';
 import QuickAddFab from '../../sections/finance/QuickAddFab';
 import { FinanceContext } from '../../context/FinanceContext';
+import MonthSelector from '../../components/ui/MonthSelector'; // Importe o novo componente
 
 export default function Dashboard() {
-  const { loans, payInstallment } = useContext(FinanceContext);
+  const { 
+    loans, payInstallment, 
+    selectedDate, setSelectedDate // Pegamos do contexto
+  } = useContext(FinanceContext);
 
   return (
     <Box sx={{ minHeight: '100vh', pb: 10 }}> {/* O fundo vem do theme */}
@@ -27,6 +31,14 @@ export default function Dashboard() {
           <IconButton sx={{ bgcolor: 'white', p: 1.5 }}>
             <NotificationsNone />
           </IconButton>
+        </Box>
+
+        {/* Navegador de Data no TOPO e CENTRALIZADO */}
+        <Box mb={4} display="flex" justifyContent="center">
+          <MonthSelector 
+            currentDate={selectedDate} 
+            onChange={(newDate) => setSelectedDate(newDate)} 
+          />
         </Box>
 
         {/* 2. Seção de Resumo (Gráficos) */}
