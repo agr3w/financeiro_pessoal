@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/admin/Dashboard";
 import Login from "./pages/public/Login";
+import Settings from "./pages/admin/Settings";
 import { useAuth } from "./context/AuthContext";
 
 // Componente para proteger rotas privadas
@@ -21,6 +22,14 @@ export default function Router() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <PrivateRoute>
+            <Settings />
           </PrivateRoute>
         }
       />

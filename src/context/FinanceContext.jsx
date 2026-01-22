@@ -2,7 +2,9 @@ import React, { createContext, useState, useEffect } from 'react';
 import {
   createTransaction, subscribeToTransactions,
   createRecurringPlan, subscribeToPlans,
-  removePlan, updatePlan
+  removePlan, updatePlan,
+  // Novos imports para categorias
+  createCategory, subscribeToCategories, removeCategory
 } from '../services/finance';
 // 1. Importar o hook de autenticação
 import { useAuth } from './AuthContext';
@@ -16,6 +18,15 @@ export const FinanceProvider = ({ children }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [allTransactions, setAllTransactions] = useState([]);
   const [loanPlans, setLoanPlans] = useState([]);
+  const [customCategories, setCustomCategories] = useState([]); // Novo estado
+
+  // CATEGORIAS PADRÃO (Ícones e Cores)
+  const defaultCategories = [
+    { id: 'Alimentação', label: 'Alimentação', iconKey: 'food', color: '#FFAB91' },
+    { id: 'Transporte', label: 'Transporte', iconKey: 'transport', color: '#90CAF9' },
+    { id: 'Compras', label: 'Compras', iconKey: 'shopping', color: '#CE93D8' },
+    { id: 'Contas', label: 'Contas', iconKey: 'bills', color: '#EF9A9A' },
+  ];
 
   // --- 1. CONEXÃO COM FIREBASE (EFEITOS) ---
 
@@ -24,6 +35,7 @@ export const FinanceProvider = ({ children }) => {
     if (!user) {
         setAllTransactions([]);
         setLoanPlans([]);
+        setCustomCategories([]); // Limpa categorias
         return;
     }
 
@@ -36,12 +48,21 @@ export const FinanceProvider = ({ children }) => {
       setLoanPlans(data);
     });
 
+    // Subscrição de Categorias
+    const unsubscribeCats = subscribeToCategories(user.uid, (data) => {
+      setCustomCategories(data);
+    });
+
     return () => {
       unsubscribeTrans();
       unsubscribePlans();
+      unsubscribeCats();
     };
   // 4. Adicionar 'user' nas dependências para refazer a conexão quando logar/deslogar
   }, [user]);
+
+  // Lista Final (Padrão + Customizadas)
+  const allCategories = [...defaultCategories, ...customCategories];
 
   // --- 2. CÁLCULOS VISUAIS (Mantém a lógica de timeline local) ---
 
@@ -92,6 +113,15 @@ export const FinanceProvider = ({ children }) => {
       ...data,
       date: data.date || selectedDate
     });
+  };
+
+  const addCategoryAction = async (catData) => {
+     if(!user) return;
+     await createCategory(user.uid, catData);
+  };
+  
+  const removeCategoryAction = async (catId) => {
+     await removeCategory(catId);
   };
 
   const addRecurringPlanAction = async (planData) => {
@@ -160,10 +190,13 @@ export const FinanceProvider = ({ children }) => {
       balance: monthBalance,
       income: monthIncome,
       expense: monthExpense,
+      categories: allCategories, // Exporta a lista completa
       addTransaction,
       payInstallment,
       addRecurringPlan: addRecurringPlanAction,
-      deletePlan: deletePlanAction
+      deletePlan: deletePlanAction,
+      addCategory: addCategoryAction,
+      removeCategory: removeCategoryAction
     }}>
       {children}
     </FinanceContext.Provider>

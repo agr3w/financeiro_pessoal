@@ -1,23 +1,24 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import Router from './Router' 
-import { ThemeProvider, CssBaseline } from '@mui/material'
-import { appTheme } from './theme/theme' 
+import Router from './Router'
+import { CssBaseline } from '@mui/material'
+import { appTheme } from './theme/theme'
 import { FinanceProvider } from './context/FinanceContext'
-import { AuthProvider } from './context/AuthContext' 
+import { AuthProvider } from './context/AuthContext'
 import { BrowserRouter } from 'react-router-dom'
+import { CustomThemeProvider } from './context/ThemeContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ThemeProvider theme={appTheme}>
+    <CustomThemeProvider>
       <CssBaseline />
-      <AuthProvider> 
+      <AuthProvider>
         <FinanceProvider>
           <BrowserRouter>
             <Router />
           </BrowserRouter>
         </FinanceProvider>
       </AuthProvider>
-    </ThemeProvider>
+    </CustomThemeProvider>
   </React.StrictMode>,
 )

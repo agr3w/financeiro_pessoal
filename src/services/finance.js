@@ -122,3 +122,40 @@ export const removeTransaction = async (transactionId) => {
     console.error("Erro ao deletar transação:", error);
   }
 };
+
+// --- CATEGORIAS PERSONALIZADAS ---
+
+export const createCategory = async (userId, categoryData) => {
+  /* categoryData: { label: "Jogos", color: "#FF0000", iconKey: "game" } */
+  try {
+    await addDoc(collection(db, "categories"), {
+      ...categoryData,
+      userId,
+      createdAt: Timestamp.now()
+    });
+  } catch (error) {
+    console.error("Erro ao criar categoria:", error);
+  }
+};
+
+export const subscribeToCategories = (userId, callback) => {
+  if (!userId) return () => {}; 
+  
+  const q = query(
+    collection(db, "categories"), 
+    where("userId", "==", userId)
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(data);
+  });
+};
+
+export const removeCategory = async (categoryId) => {
+  try {
+    await deleteDoc(doc(db, "categories", categoryId));
+  } catch (error) {
+    console.error("Erro ao deletar categoria:", error);
+  }
+};
