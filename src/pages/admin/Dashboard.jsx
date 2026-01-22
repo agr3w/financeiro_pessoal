@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react'; // Adicione useState aqui se faltar
-import { Container, Grid, Typography, Box } from '@mui/material';
+import { Container, Grid, Typography, Box, Button } from '@mui/material';
 import Header from '../../components/layout/Header'; // <--- Importe o novo Header
+import Footer from '../../components/layout/Footer'; // <--- Importe o Footer
 import MonthSelector from '../../components/ui/MonthSelector';
 import DashboardStats from '../../sections/finance/DashboardStats';
 import CashFlowTable from '../../sections/finance/CashFlowTable';
@@ -9,7 +10,6 @@ import TransactionList from '../../sections/finance/TransactionList';
 import QuickAddFab from '../../sections/finance/QuickAddFab';
 import AddPlanModal from '../../components/organisms/AddPlanModal';
 import { FinanceContext } from '../../context/FinanceContext';
-import { Button } from '@mui/material';
 
 export default function Dashboard() {
   const { 
@@ -20,12 +20,14 @@ export default function Dashboard() {
   const [isPlanModalOpen, setPlanModalOpen] = useState(false);
 
   return (
-    <Box sx={{ minHeight: '100vh', pb: 10 }}>
+    // Layout Flex para empurrar o Footer
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
       
-      {/* 1. NOVO HEADER AQUI (Ele cuida do Avatar e Logout sozinho) */}
+      {/* 1. NOVO HEADER */}
       <Header /> 
 
-      <Container maxWidth="lg">
+      {/* Conteúdo Expansível (flexGrow: 1) */}
+      <Container maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
         
         {/* Seletor de Mês */}
         <Box mb={4}>
@@ -89,6 +91,9 @@ export default function Dashboard() {
         open={isPlanModalOpen} 
         onClose={() => setPlanModalOpen(false)} 
       />
+
+      {/* FOOTER AQUI */}
+      <Footer />
     </Box>
   );
 }

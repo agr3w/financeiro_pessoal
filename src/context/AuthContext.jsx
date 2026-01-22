@@ -3,7 +3,11 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    updatePassword,      // <--- Novo
+    deleteUser,          // <--- Novo
+    reauthenticateWithCredential, // <--- Novo
+    EmailAuthProvider    // <--- Novo
 } from "firebase/auth";
 import { auth } from "../services/firebase";
 
@@ -15,22 +19,44 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Criar conta
     const signup = (email, password) => {
         return createUserWithEmailAndPassword(auth, email, password);
     };
 
-    // Login
     const login = (email, password) => {
         return signInWithEmailAndPassword(auth, email, password);
     };
 
-    // Logout
     const logout = () => {
         return signOut(auth);
     };
 
-    // Ouve mudanças (login/logout) automaticamente
+    // --- NOVAS FUNÇÕES DE SEGURANÇA ---
+
+    // Alterar Senha
+    const updateUserPassword = async (currentPassword, newPassword) => {
+        if (!user) throw new Error("Usuário não autenticado");
+
+        // 1. Re-autenticar para garantir segurança
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+
+        // 2. Atualizar senha
+        await updatePassword(user, newPassword);
+    };
+
+    // Deletar Conta
+    const deleteUserAccount = async (currentPassword) => {
+        if (!user) throw new Error("Usuário não autenticado");
+
+        // 1. Re-autenticar
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+
+        // 2. Deletar
+        await deleteUser(user);
+    };
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             setUser(currentUser);
@@ -43,7 +69,9 @@ export const AuthProvider = ({ children }) => {
         user,
         signup,
         login,
-        logout
+        logout,
+        updateUserPassword, // Exporta nova função
+        deleteUserAccount   // Exporta nova função
     };
 
     return (

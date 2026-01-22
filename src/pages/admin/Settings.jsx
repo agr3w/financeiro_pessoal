@@ -1,102 +1,149 @@
 import React, { useState, useContext } from 'react';
-import { 
-  Container, Grid, Paper, Typography, Box, Switch, Button, 
-  Dialog, TextField, Chip, Divider 
+import {
+  Container, Grid, Paper, Typography, Box, Switch, Divider, Button,
+  Dialog, TextField, DialogTitle, DialogContent, DialogActions, Alert
 } from '@mui/material';
-import { DarkMode, Add, Palette, Category, Security } from '@mui/icons-material';
+import {
+  DarkMode, LockReset, DeleteForever, Security
+} from '@mui/icons-material'; // Ícones novos
 import Header from '../../components/layout/Header';
-import { useThemeContext } from '../../context/ThemeContext'; // Contexto do Tema
-import { FinanceContext } from '../../context/FinanceContext'; // Contexto Financeiro
+import Footer from '../../components/layout/Footer'; // Importe o Footer
+import { useThemeContext } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext'; // Importe Auth
 
 // Componente auxiliar para os itens da lista
-const SettingItem = ({ icon, title, description, action }) => (
-    <Box display="flex" justifyContent="space-between" alignItems="center" py={2}>
-        <Box display="flex" gap={2} alignItems="center">
-            <Box sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 2, color: '#555' }}>
-                {icon}
-            </Box>
-            <Box>
-                <Typography variant="subtitle1" fontWeight="bold">{title}</Typography>
-                <Typography variant="caption" color="text.secondary">{description}</Typography>
-            </Box>
-        </Box>
-        <Box>
-            {action}
-        </Box>
+const SettingItem = ({ icon, title, description, action, danger }) => (
+  <Box display="flex" justifyContent="space-between" alignItems="center" py={2}>
+    <Box display="flex" gap={2} alignItems="center">
+      <Box sx={{
+        p: 1,
+        bgcolor: danger ? '#ffebee' : '#f5f5f5',
+        color: danger ? '#d32f2f' : '#555',
+        borderRadius: 2
+      }}>
+        {icon}
+      </Box>
+      <Box>
+        <Typography variant="subtitle1" fontWeight="bold" color={danger ? 'error' : 'textPrimary'}>
+          {title}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">{description}</Typography>
+      </Box>
     </Box>
+    <Box>
+      {action}
+    </Box>
+  </Box>
 );
 
 export default function Settings() {
   const { mode, toggleColorMode } = useThemeContext();
-  const { categories, addCategory, removeCategory } = useContext(FinanceContext);
-  
-  // Estado para Modal de Nova Categoria
-  const [openCatModal, setOpenCatModal] = useState(false);
-  const [newCatName, setNewCatName] = useState('');
+  const { updateUserPassword, deleteUserAccount } = useAuth();
 
-  const handleAddCategory = async () => {
-    if (!newCatName) return;
-    await addCategory({
-      label: newCatName,
-      id: newCatName, // Usando nome como ID por simplicidade inicial
-      iconKey: 'star', // Ícone genérico para customizados
-      color: '#B0BEC5' // Cor genérica (Cinza)
-    });
-    setNewCatName('');
-    setOpenCatModal(false);
+  // Estados dos Modais
+  const [openPassModal, setOpenPassModal] = useState(false);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+
+  // Estados dos Formulários
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
+
+  // --- HANDLERS ---
+
+  const handleUpdatePassword = async () => {
+    setStatusMsg({ type: '', text: '' });
+    try {
+      await updateUserPassword(currentPassword, newPassword);
+      setStatusMsg({ type: 'success', text: 'Senha atualizada com sucesso!' });
+      setTimeout(() => {
+        setOpenPassModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setStatusMsg({ type: '', text: '' });
+      }, 1500);
+    } catch (error) {
+      console.error(error);
+      setStatusMsg({ type: 'error', text: 'Erro: Senha atual incorreta ou muito fraca.' });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setStatusMsg({ type: '', text: '' });
+    try {
+      await deleteUserAccount(currentPassword);
+      // O AuthContext vai detectar o logout e redirecionar para login automaticamente
+    } catch (error) {
+      console.error(error);
+      setStatusMsg({ type: 'error', text: 'Erro: Senha incorreta. Não foi possível apagar.' });
+    }
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Header title="Configurações" subtitle="Gerencie suas preferências e conta" />
-      
-      <Container maxWidth="md">
-        <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold' }}>Configurações</Typography>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
+      <Header title="Configurações" />
 
+      <Container maxWidth="md" sx={{ flexGrow: 1 }}>
         <Grid container spacing={3}>
-          
-          {/* Bloco 1: Aparência */}
+
+          {/* APARÊNCIA */}
           <Grid item xs={12}>
             <Paper sx={{ p: 3, borderRadius: 3 }}>
               <Typography variant="h6" fontFamily="serif" mb={2}>Aparência</Typography>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Box display="flex" gap={2} alignItems="center">
-                  <Box sx={{ p: 1, bgcolor: mode === 'light' ? '#f5f5f5' : '#333', borderRadius: 2 }}>
-                    <DarkMode />
-                  </Box>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight="bold">Modo Escuro</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {mode === 'light' ? 'Desativado' : 'Ativado'}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Switch checked={mode === 'dark'} onChange={toggleColorMode} />
-              </Box>
+              <SettingItem
+                icon={<DarkMode />}
+                title="Modo Escuro"
+                description="Habilitar tema escuro"
+                action={<Switch checked={mode === 'dark'} onChange={toggleColorMode} />}
+              />
             </Paper>
           </Grid>
 
-          {/* Bloco 2: Sistema */}
+          {/* SEGURANÇA */}
           <Grid item xs={12}>
             <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Typography variant="h6" fontFamily="serif" mb={2}>Sistema</Typography>
+              <Typography variant="h6" fontFamily="serif" mb={2}>Segurança</Typography>
 
               <SettingItem
-                  icon={<Category />}
-                  title="Categorias Personalizadas"
-                  description="Adicione ou remova categorias de gastos"
-                  action={
-                    <Button variant="outlined" size="small" sx={{ borderRadius: 4 }} onClick={() => setOpenCatModal(true)}>
-                      Gerenciar
-                    </Button>
-                  }
+                icon={<LockReset />}
+                title="Alterar Senha"
+                description="Mude sua senha de acesso periodicamente"
+                action={
+                  <Button variant="outlined" size="small" onClick={() => setOpenPassModal(true)}>
+                    Alterar
+                  </Button>
+                }
               />
               <Divider sx={{ my: 1 }} />
               <SettingItem
-                  icon={<Security />}
-                  title="Segurança"
-                  description="Alterar senha e autenticação de dois fatores"
-                  action={<Button size="small">Editar</Button>}
+                icon={<Security />}
+                title="E-mail de Acesso"
+                description="O e-mail não pode ser alterado por segurança"
+                action={<Button size="small" disabled>Bloqueado</Button>}
+              />
+            </Paper>
+          </Grid>
+
+          {/* ZONA DE PERIGO */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #ffcdd2' }}>
+              <Typography variant="h6" fontFamily="serif" color="error" mb={2}>Zona de Perigo</Typography>
+
+              <SettingItem
+                danger
+                icon={<DeleteForever />}
+                title="Excluir Minha Conta"
+                description="Esta ação é irreversível e apagará todos os seus dados"
+                action={
+                  <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    onClick={() => setOpenDeleteModal(true)}
+                  >
+                    Excluir
+                  </Button>
+                }
               />
             </Paper>
           </Grid>
@@ -104,26 +151,68 @@ export default function Settings() {
         </Grid>
       </Container>
 
-      {/* Modal de Adicionar Categoria */}
-      <Dialog open={openCatModal} onClose={() => setOpenCatModal(false)} fullWidth maxWidth="xs">
-        <Box p={3}>
-            <Typography variant="h6" mb={2}>Nova Categoria</Typography>
-            <TextField 
-                label="Nome (Ex: Jogos, Pets)" 
-                fullWidth 
-                autoFocus
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-            />
-            <Button 
-                fullWidth 
-                variant="contained" 
-                sx={{ mt: 2 }} 
-                onClick={handleAddCategory}
-            >
-                Salvar
-            </Button>
-        </Box>
+      {/* ADICIONANDO O FOOTER AQUI */}
+      <Footer />
+
+      {/* --- MODAL DE TROCAR SENHA --- */}
+      <Dialog open={openPassModal} onClose={() => setOpenPassModal(false)}>
+        <DialogTitle>Alterar Senha</DialogTitle>
+        <DialogContent sx={{ minWidth: 300 }}>
+          {statusMsg.text && <Alert severity={statusMsg.type} sx={{ mb: 2 }}>{statusMsg.text}</Alert>}
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Senha Atual"
+            type="password"
+            fullWidth
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+          />
+          <TextField
+            margin="dense"
+            label="Nova Senha"
+            type="password"
+            fullWidth
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPassModal(false)}>Cancelar</Button>
+          <Button onClick={handleUpdatePassword} variant="contained">Salvar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* --- MODAL DE DELETAR CONTA --- */}
+      <Dialog open={openDeleteModal} onClose={() => setOpenDeleteModal(false)}>
+        <DialogTitle sx={{ color: 'error.main' }}>Excluir Conta?</DialogTitle>
+        <DialogContent sx={{ minWidth: 300 }}>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Tem certeza absoluta? Isso apagará <strong>todas as suas transações, empréstimos e categorias</strong>. Não há como desfazer.
+          </Typography>
+
+          {statusMsg.text && <Alert severity={statusMsg.type} sx={{ mb: 2 }}>{statusMsg.text}</Alert>}
+
+          <Typography variant="caption" display="block" mb={1}>
+            Digite sua senha atual para confirmar:
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Sua Senha"
+            type="password"
+            fullWidth
+            color="error"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteModal(false)}>Cancelar</Button>
+          <Button onClick={handleDeleteAccount} variant="contained" color="error">
+            Sim, apagar tudo
+          </Button>
+        </DialogActions>
       </Dialog>
 
     </Box>
