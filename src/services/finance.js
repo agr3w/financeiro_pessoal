@@ -126,7 +126,6 @@ export const removeTransaction = async (transactionId) => {
 // --- CATEGORIAS PERSONALIZADAS ---
 
 export const createCategory = async (userId, categoryData) => {
-  /* categoryData: { label: "Jogos", color: "#FF0000", iconKey: "game" } */
   try {
     await addDoc(collection(db, "categories"), {
       ...categoryData,
@@ -139,8 +138,9 @@ export const createCategory = async (userId, categoryData) => {
 };
 
 export const subscribeToCategories = (userId, callback) => {
-  if (!userId) return () => {}; 
-  
+  // Proteção básica: se não tiver userId, não tenta buscar
+  if (!userId) return () => {};
+
   const q = query(
     collection(db, "categories"), 
     where("userId", "==", userId)
@@ -150,6 +150,16 @@ export const subscribeToCategories = (userId, callback) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     callback(data);
   });
+};
+
+// ATUALIZAR (NOVO)
+export const updateCategory = async (categoryId, newData) => {
+  try {
+    const docRef = doc(db, "categories", categoryId);
+    await updateDoc(docRef, newData);
+  } catch (error) {
+    console.error("Erro ao atualizar categoria:", error);
+  }
 };
 
 export const removeCategory = async (categoryId) => {

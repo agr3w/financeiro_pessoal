@@ -4,7 +4,7 @@ import {
   createRecurringPlan, subscribeToPlans,
   removePlan, updatePlan,
   // Novos imports para categorias
-  createCategory, subscribeToCategories, removeCategory
+  createCategory, subscribeToCategories, removeCategory, updateCategory // <-- importado updateCategory
 } from '../services/finance';
 // 1. Importar o hook de autenticação
 import { useAuth } from './AuthContext';
@@ -105,6 +105,7 @@ export const FinanceProvider = ({ children }) => {
 
   // --- 3. AÇÕES (Atualizadas para enviar o userId) ---
 
+  // Ações
   const addTransaction = async (data) => {
     if (!user) return; // Segurança
 
@@ -120,6 +121,11 @@ export const FinanceProvider = ({ children }) => {
      await createCategory(user.uid, catData);
   };
   
+  // NOVA AÇÃO DE EDITAR
+  const editCategoryAction = async (catId, newData) => {
+     await updateCategory(catId, newData);
+  };
+
   const removeCategoryAction = async (catId) => {
      await removeCategory(catId);
   };
@@ -185,7 +191,7 @@ export const FinanceProvider = ({ children }) => {
   return (
     <FinanceContext.Provider value={{
       selectedDate, setSelectedDate,
-      transactions: filteredTransactions, // Certifique-se que o código existente de "CÁLCULOS VISUAIS" está aqui
+      transactions: filteredTransactions,
       loans: monthLoans,
       balance: monthBalance,
       income: monthIncome,
@@ -196,6 +202,7 @@ export const FinanceProvider = ({ children }) => {
       addRecurringPlan: addRecurringPlanAction,
       deletePlan: deletePlanAction,
       addCategory: addCategoryAction,
+      editCategory: editCategoryAction, // <-- exportado aqui
       removeCategory: removeCategoryAction
     }}>
       {children}

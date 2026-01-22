@@ -4,6 +4,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Login from "./pages/public/Login";
 import Settings from "./pages/admin/Settings";
 import { useAuth } from "./context/AuthContext";
+import Categories from "./pages/admin/Categories";
 
 // Componente para proteger rotas privadas
 const PrivateRoute = ({ children }) => {
@@ -33,6 +34,9 @@ export default function Router() {
           </PrivateRoute>
         }
       />
+      <Route path="/categories" element={
+        <PrivateRoute><Categories /></PrivateRoute>
+      } />
     </Routes>
   );
 }
