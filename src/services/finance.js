@@ -1,17 +1,18 @@
 import { db } from './firebase';
-import {
-  collection, addDoc, doc, deleteDoc, updateDoc,
-  onSnapshot, query, orderBy, Timestamp
+import { 
+  collection, addDoc, deleteDoc, updateDoc, doc, 
+  onSnapshot, query, orderBy, where, Timestamp 
 } from 'firebase/firestore';
 
-// --- TRANSAÇÕES (Ganhos/Gastos) ---
+// --- TRANSAÇÕES ---
 
-// Adicionar
-export const createTransaction = async (data) => {
+// userId é obrigatório agora para vincular o dado ao usuário
+export const createTransaction = async (userId, data) => { 
   try {
     await addDoc(collection(db, "transactions"), {
       ...data,
-      date: Timestamp.fromDate(new Date(data.date)), // Converte JS Date para Firestore Timestamp
+      userId, // Salva o dono do dado
+      date: Timestamp.fromDate(new Date(data.date)),
       createdAt: Timestamp.now()
     });
   } catch (error) {
@@ -19,29 +20,30 @@ export const createTransaction = async (data) => {
   }
 };
 
-// Ouvir (Realtime)
-export const subscribeToTransactions = (callback) => {
-  // Pega todas, ordenadas por data. 
-  // (Em app grande, filtraríamos por mês aqui, mas para pessoal isso funciona bem)
-  const q = query(collection(db, "transactions"), orderBy("date", "desc"));
+export const subscribeToTransactions = (userId, callback) => {
+  if (!userId) return () => {}; // Se não tiver usuário, não faz nada (segurança)
 
+  // FILTRO DE SEGURANÇA: where("userId", "==", userId)
+  const q = query(
+    collection(db, "transactions"), 
+    where("userId", "==", userId), 
+    orderBy("date", "desc")
+  );
+  
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-      date: doc.data().date.toDate() // Converte de volta para JS Date
+      date: doc.data().date.toDate()
     }));
     callback(data);
   });
 };
 
-// --- PLANOS RECORRENTES (Parcelados/Empréstimos) ---
+// --- PLANOS RECORRENTES ---
 
-// Adicionar Plano
-export const createRecurringPlan = async (planData) => {
-  /* planData: { title, totalDebt, installments: [...], ... } */
+export const createRecurringPlan = async (userId, planData) => {
   try {
-    // Tratamento de datas dentro das parcelas
     const sanitizedInstallments = planData.installments.map(inst => ({
       ...inst,
       dueDate: Timestamp.fromDate(new Date(inst.dueDate))
@@ -49,6 +51,7 @@ export const createRecurringPlan = async (planData) => {
 
     await addDoc(collection(db, "recurring_plans"), {
       ...planData,
+      userId, // Salva o dono
       installments: sanitizedInstallments,
       createdAt: Timestamp.now()
     });
@@ -57,20 +60,24 @@ export const createRecurringPlan = async (planData) => {
   }
 };
 
-// Ouvir Planos
-export const subscribeToPlans = (callback) => {
-  const q = query(collection(db, "recurring_plans"), orderBy("createdAt", "desc"));
+export const subscribeToPlans = (userId, callback) => {
+  if (!userId) return () => {}; 
 
+  const q = query(
+    collection(db, "recurring_plans"), 
+    where("userId", "==", userId), 
+    orderBy("createdAt", "desc")
+  );
+  
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => {
       const raw = doc.data();
       return {
         id: doc.id,
         ...raw,
-        // Converte as datas das parcelas de volta
         installments: raw.installments.map(inst => ({
           ...inst,
-          dueDate: inst.dueDate.toDate()
+          dueDate: inst.dueDate.toDate() // Converte timestamp de volta para Date
         }))
       };
     });
@@ -78,7 +85,10 @@ export const subscribeToPlans = (callback) => {
   });
 };
 
-// Atualizar Plano (Ex: Marcar parcela como paga)
+// --- OPERAÇÕES GERAIS (Update/Delete) ---
+// Estas funções operam pelo ID do documento, então não precisam mudar a assinatura,
+// mas as regras de segurança do Firebase (Firestore Rules) devem garantir que só o dono edite.
+
 export const updatePlan = async (planId, newData) => {
   try {
     // Se houver parcelas na atualização, precisa sanitizar as datas de novo
@@ -88,7 +98,7 @@ export const updatePlan = async (planId, newData) => {
         dueDate: inst.dueDate instanceof Date ? Timestamp.fromDate(inst.dueDate) : inst.dueDate
       }));
     }
-
+    
     const docRef = doc(db, "recurring_plans", planId);
     await updateDoc(docRef, newData);
   } catch (error) {
@@ -96,11 +106,19 @@ export const updatePlan = async (planId, newData) => {
   }
 };
 
-// Deletar Plano
 export const removePlan = async (planId) => {
   try {
     await deleteDoc(doc(db, "recurring_plans", planId));
   } catch (error) {
     console.error("Erro ao deletar:", error);
+  }
+};
+
+// Adicionando suporte para deletar transações também (caso precise no futuro)
+export const removeTransaction = async (transactionId) => {
+  try {
+    await deleteDoc(doc(db, "transactions", transactionId));
+  } catch (error) {
+    console.error("Erro ao deletar transação:", error);
   }
 };

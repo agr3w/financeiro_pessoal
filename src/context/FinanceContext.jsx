@@ -4,35 +4,44 @@ import {
   createRecurringPlan, subscribeToPlans,
   removePlan, updatePlan
 } from '../services/finance';
+// 1. Importar o hook de autenticação
+import { useAuth } from './AuthContext';
 
 export const FinanceContext = createContext();
 
 export const FinanceProvider = ({ children }) => {
+  // 2. Pegar o usuário logado
+  const { user } = useAuth();
+  
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // AGORA COMEÇAM VAZIOS
   const [allTransactions, setAllTransactions] = useState([]);
   const [loanPlans, setLoanPlans] = useState([]);
 
   // --- 1. CONEXÃO COM FIREBASE (EFEITOS) ---
 
   useEffect(() => {
-    // Inscreve para ouvir Transações
-    const unsubscribeTrans = subscribeToTransactions((data) => {
+    // Se não tiver usuário logado, não busca nada e limpa os estados
+    if (!user) {
+        setAllTransactions([]);
+        setLoanPlans([]);
+        return;
+    }
+
+    // 3. Passar user.uid como primeiro argumento (CORREÇÃO DO ERRO)
+    const unsubscribeTrans = subscribeToTransactions(user.uid, (data) => {
       setAllTransactions(data);
     });
 
-    // Inscreve para ouvir Planos
-    const unsubscribePlans = subscribeToPlans((data) => {
+    const unsubscribePlans = subscribeToPlans(user.uid, (data) => {
       setLoanPlans(data);
     });
 
-    // Limpeza ao fechar o app
     return () => {
       unsubscribeTrans();
       unsubscribePlans();
     };
-  }, []);
+  // 4. Adicionar 'user' nas dependências para refazer a conexão quando logar/deslogar
+  }, [user]);
 
   // --- 2. CÁLCULOS VISUAIS (Mantém a lógica de timeline local) ---
 
@@ -73,33 +82,38 @@ export const FinanceProvider = ({ children }) => {
 
   }, [selectedDate, allTransactions, loanPlans]);
 
-  // --- 3. AÇÕES (Agora chamam o Firebase) ---
+  // --- 3. AÇÕES (Atualizadas para enviar o userId) ---
 
   const addTransaction = async (data) => {
-    await createTransaction({
+    if (!user) return; // Segurança
+
+    // Passar user.uid primeiro
+    await createTransaction(user.uid, {
       ...data,
       date: data.date || selectedDate
     });
   };
 
   const addRecurringPlanAction = async (planData) => {
-    // Lógica de gerar as parcelas (igual antes, mas prepara para envio)
+    if (!user) return;
+
     const installmentValue = planData.totalAmount / planData.installmentsCount;
     const newInstallments = [];
     const start = new Date(planData.startDate);
 
     for (let i = 0; i < planData.installmentsCount; i++) {
-      const date = new Date(start);
-      date.setMonth(start.getMonth() + i);
-      newInstallments.push({
-        number: i + 1,
-        amount: installmentValue,
-        dueDate: date,
-        paid: false
-      });
+        const date = new Date(start);
+        date.setMonth(start.getMonth() + i);
+        newInstallments.push({
+          number: i + 1,
+          amount: installmentValue,
+          dueDate: date,
+          paid: false
+        });
     }
 
-    await createRecurringPlan({
+    // Passar user.uid primeiro
+    await createRecurringPlan(user.uid, {
       title: planData.title,
       totalDebt: parseFloat(planData.totalAmount),
       category: planData.category,
@@ -112,6 +126,7 @@ export const FinanceProvider = ({ children }) => {
   };
 
   const payInstallment = async (loanId, installmentNumber) => {
+    if (!user) return; // Segurança
     const plan = loanPlans.find(p => p.id === loanId);
     if (!plan) return;
 
@@ -126,7 +141,9 @@ export const FinanceProvider = ({ children }) => {
 
     // 3. Cria a transação de saída (Extrato)
     const installment = plan.installments.find(i => i.number === installmentNumber);
-    await createTransaction({
+    
+    // Passar user.uid também na criação da despesa automática
+    await createTransaction(user.uid, {
       label: `Parcela ${installmentNumber} - ${plan.title}`,
       amount: installment.amount,
       type: 'expense',
@@ -138,7 +155,7 @@ export const FinanceProvider = ({ children }) => {
   return (
     <FinanceContext.Provider value={{
       selectedDate, setSelectedDate,
-      transactions: filteredTransactions,
+      transactions: filteredTransactions, // Certifique-se que o código existente de "CÁLCULOS VISUAIS" está aqui
       loans: monthLoans,
       balance: monthBalance,
       income: monthIncome,

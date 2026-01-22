@@ -28,16 +28,17 @@ export default function DashboardStats() {
   return (
     <Grid container spacing={3}>
       
-      {/* 1. VISÃO GERAL (Tabela Lilás) */}
+      {/* 1. VISÃO GERAL (Tabela) */}
       <Grid size={{ xs: 12, md: 4 }}>
         <Paper 
           elevation={0} 
           sx={{ 
             bgcolor: APP_COLORS.purple.light, 
             p: 2, 
-            height: '100%', 
+            // Dica: Removemos height: '100%' para deixar o conteúdo ditar a altura
             borderRadius: 2,
-            border: `1px solid ${APP_COLORS.purple.main}20`
+            border: `1px solid ${APP_COLORS.purple.main}20`,
+            minHeight: 260 // Garante alinhamento visual com os outros cards
           }}
         >
           <Typography variant="h6" fontFamily="serif" align="center" sx={{ mb: 2, color: APP_COLORS.purple.dark }}>
@@ -68,13 +69,13 @@ export default function DashboardStats() {
         </Paper>
       </Grid>
 
-      {/* 2. VALOR PARA GASTAR (Gráfico Rosca Central) */}
+      {/* 2. VALOR PARA GASTAR (Gráfico Rosca) */}
       <Grid size={{ xs: 12, md: 4 }}>
-        <Paper elevation={0} sx={{ p: 2, height: '100%', borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Paper elevation={0} sx={{ p: 2, minHeight: 260, borderRadius: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography variant="overline" letterSpacing={2}>SALDO DISPONÍVEL</Typography>
           
-          {/* Adicionado minWidth: 0 para evitar colapso do flex item */}
-          <Box sx={{ width: '100%', height: 200, position: 'relative', minWidth: 0 }}>
+          {/* Defina dimensões fixas no Box pai para evitar o erro width(-1) */}
+          <Box sx={{ width: '100%', height: 200, position: 'relative' }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -84,13 +85,13 @@ export default function DashboardStats() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  <Cell fill="#eee" /> {/* Gasto (Cinza) */}
-                  <Cell fill={APP_COLORS.purple.main} /> {/* Restante (Roxo) */}
+                  <Cell fill="#eee" />
+                  <Cell fill={APP_COLORS.purple.main} />
                 </Pie>
                 <Tooltip formatter={(value) => `R$ ${value}`} />
               </PieChart>
             </ResponsiveContainer>
-            {/* Texto no meio do Donut */}
+            
             <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
               <Typography variant="h5" fontWeight="bold">R$ {balance.toFixed(0)}</Typography>
             </Box>
@@ -98,23 +99,32 @@ export default function DashboardStats() {
         </Paper>
       </Grid>
 
-      {/* 3. CATEGORIAS DE GASTOS (Gráfico Pizza Direita) */}
+      {/* 3. CATEGORIAS DE GASTOS (Gráfico Pizza) */}
       <Grid size={{ xs: 12, md: 4 }}>
-        <Paper elevation={0} sx={{ p: 2, height: '100%', borderRadius: 2 }}>
+        <Paper elevation={0} sx={{ p: 2, minHeight: 260, borderRadius: 2 }}>
           <Typography variant="overline" letterSpacing={2} align="center" display="block">
             POR CATEGORIA
           </Typography>
-          <Box sx={{ width: '100%', height: 200, minWidth: 0 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%" outerRadius={80} dataKey="value">
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          
+          {/* Usando altura fixa para estabilizar o Recharts */}
+          <Box sx={{ width: '100%', height: 200 }}>
+            {categoryData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                    <Pie data={categoryData} cx="50%" cy="50%" outerRadius={80} dataKey="value">
+                    {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                    </Pie>
+                    <Tooltip />
+                </PieChart>
+                </ResponsiveContainer>
+            ) : (
+                <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                    <Typography variant="caption" color="text.secondary">Sem gastos ainda</Typography>
+                </Box>
+            )}
+
           </Box>
         </Paper>
       </Grid>

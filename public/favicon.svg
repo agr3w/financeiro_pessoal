@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Gradiente do Tema -->
+    <linearGradient id="grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9575CD"/>
+      <stop offset="100%" stop-color="#EC407A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Fundo Arredondado -->
+  <rect width="512" height="512" rx="128" fill="url(#grad)"/>
+  
+  <!-- Ícone Gráfico Pizza (Simplificado para Paths) -->
+  <g transform="translate(256, 256)">
+    <!-- Parte maior do gráfico -->
+    <path d="M-150,0 A150,150 0 1,1 0,-150" stroke="white" stroke-width="45" fill="none" stroke-linecap="round" opacity="0.9" />
+    
+    <!-- Fatia separada (Destaque) -->
+    <path d="M0,-150 L0,0 L120,-90" fill="white" stroke="white" stroke-width="20" stroke-linejoin="round" />
+  </g>
+</svg>
