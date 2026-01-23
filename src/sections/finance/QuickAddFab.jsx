@@ -96,7 +96,7 @@ export default function QuickAddFab() {
         maxWidth="xs"
         PaperProps={{
           sx: { 
-            borderRadius: 5, 
+            borderRadius: 2, 
             overflow: 'hidden', 
             backgroundColor: '#fff' 
           } 

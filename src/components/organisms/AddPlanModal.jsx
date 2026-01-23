@@ -49,7 +49,7 @@ export default function AddPlanModal({ open, onClose }) {
       onClose={onClose} 
       fullWidth 
       maxWidth="xs"
-      PaperProps={{ sx: { borderRadius: 4, p: 1 } }}
+      PaperProps={{ sx: { borderRadius: 2, p: 1 } }}
     >
       <Box position="relative">
         <IconButton onClick={onClose} sx={{ position: 'absolute', right: 0, top: 0 }}>

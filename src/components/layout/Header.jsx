@@ -102,7 +102,7 @@ export default function Header({ title, subtitle }) {
                   overflow: 'visible',
                   filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
                   mt: 1.5,
-                  borderRadius: 3,
+                  borderRadius: 0.5,
                   minWidth: 200,
                   '&:before': { // A setinha apontando pra cima
                     content: '""',
