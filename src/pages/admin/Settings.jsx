@@ -4,12 +4,13 @@ import {
   Dialog, TextField, DialogTitle, DialogContent, DialogActions, Alert
 } from '@mui/material';
 import {
-  DarkMode, LockReset, DeleteForever, Security
-} from '@mui/icons-material'; // Ícones novos
+  DarkMode, LockReset, DeleteForever, Security, ArrowBackIosNew
+} from '@mui/icons-material'; // Ícones novos (adicionado ArrowBack)
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer'; // Importe o Footer
 import { useThemeContext } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext'; // Importe Auth
+import { useNavigate } from 'react-router-dom'; // <-- adicionado
 
 // Componente auxiliar para os itens da lista
 const SettingItem = ({ icon, title, description, action, danger }) => (
@@ -39,6 +40,7 @@ const SettingItem = ({ icon, title, description, action, danger }) => (
 export default function Settings() {
   const { mode, toggleColorMode } = useThemeContext();
   const { updateUserPassword, deleteUserAccount } = useAuth();
+  const navigate = useNavigate(); // <-- adicionado
 
   // Estados dos Modais
   const [openPassModal, setOpenPassModal] = useState(false);
@@ -83,6 +85,19 @@ export default function Settings() {
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', display: 'flex', flexDirection: 'column' }}>
       <Header title="Configurações" />
 
+      {/* Botão visível para voltar ao Home */}
+      <Box sx={{ px: 3, mt: -1, mb: 2 }}>
+        <Button
+          startIcon={<ArrowBackIosNew />}
+          onClick={() => navigate('/')}
+          variant="outlined"
+          size="medium"
+          sx={{ textTransform: 'none' }}
+        >
+          Voltar ao Início
+        </Button>
+      </Box>
+
       <Container maxWidth="md" sx={{ flexGrow: 1 }}>
         <Grid container spacing={3}>
 
@@ -114,13 +129,7 @@ export default function Settings() {
                   </Button>
                 }
               />
-              <Divider sx={{ my: 1 }} />
-              <SettingItem
-                icon={<Security />}
-                title="E-mail de Acesso"
-                description="O e-mail não pode ser alterado por segurança"
-                action={<Button size="small" disabled>Bloqueado</Button>}
-              />
+              <Divider />
             </Paper>
           </Grid>
 
