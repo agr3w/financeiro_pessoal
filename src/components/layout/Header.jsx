@@ -37,7 +37,7 @@ export default function Header({ title, subtitle }) {
   };
 
   return (
-    <Box sx={{ bgcolor: 'background.paper', py: 2, borderBottom: '1px solid rgba(0,0,0,0.05)', mb: 4 }}>
+    <Box sx={{ bgcolor: 'background.paper', py: 2, borderBottom: 1, borderColor: 'custom.border', mb: 4 }}>
       <Container maxWidth="lg">
         <Box display="flex" justifyContent="space-between" alignItems="center">
 

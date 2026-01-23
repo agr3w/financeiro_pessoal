@@ -6,85 +6,149 @@ const ThemeContext = createContext();
 export const useThemeContext = () => useContext(ThemeContext);
 
 export const CustomThemeProvider = ({ children }) => {
-    // Lê do localStorage ou usa 'light' como padrão
-    const [mode, setMode] = useState(localStorage.getItem('themeMode') || 'light');
+  const [mode, setMode] = useState(localStorage.getItem('themeMode') || 'light');
 
-    const toggleColorMode = () => {
-        setMode((prevMode) => {
-            const newMode = prevMode === 'light' ? 'dark' : 'light';
-            localStorage.setItem('themeMode', newMode); // Salva preferência
-            return newMode;
-        });
-    };
+  const toggleColorMode = () => {
+    setMode((prevMode) => {
+      const newMode = prevMode === 'light' ? 'dark' : 'light';
+      localStorage.setItem('themeMode', newMode);
+      return newMode;
+    });
+  };
 
-    // Recria o tema sempre que o 'mode' muda
-    const theme = useMemo(() => createTheme({
-        palette: {
-            mode,
-            primary: { main: '#333333' },
-            secondary: { main: '#7C4DFF' },
-            background: {
-                default: mode === 'light' ? '#FDFBF7' : '#121212', // Creme vs Preto Absoluto
-                paper: mode === 'light' ? '#FFFFFF' : '#1E1E1E',   // Branco vs Cinza Escuro
-            },
-            text: {
-                primary: mode === 'light' ? '#2D2D2D' : '#FFFFFF',
-                secondary: mode === 'light' ? '#555555' : '#AAAAAA',
-            },
-            // Cores semânticas mantidas (ajustadas para brilho no dark mode)
-            custom: {
-                purple: mode === 'light' ? '#F3E5F5' : '#4A148C',
-                purpleText: mode === 'light' ? '#7B1FA2' : '#E1BEE7',
-                pink: mode === 'light' ? '#FFEBEE' : '#880E4F',
-                pinkText: mode === 'light' ? '#C2185B' : '#F48FB1',
-                orange: mode === 'light' ? '#FFF3E0' : '#E65100',
-                orangeText: mode === 'light' ? '#E65100' : '#FFCC80',
-                green: mode === 'light' ? '#E8F5E9' : '#1B5E20',
-                greenText: mode === 'light' ? '#2E7D32' : '#A5D6A7'
+  // --- PALETA DE CORES PROFISSIONAL ---
+  const getDesignTokens = (mode) => ({
+    palette: {
+      mode,
+      primary: {
+        // Azul Índigo (Passa confiança e seriedade financeira)
+        main: mode === 'light' ? '#2563EB' : '#3B82F6', 
+        contrastText: '#ffffff',
+      },
+      secondary: {
+        // Teal/Verde Água (Remete a crescimento/dinheiro)
+        main: mode === 'light' ? '#10B981' : '#34D399',
+        contrastText: '#ffffff',
+      },
+      background: {
+        // Light: Cinza azulado muito suave (Melhor que branco puro)
+        // Dark: "Midnight" (Azul muito escuro, quase preto, mas suave)
+        default: mode === 'light' ? '#F4F6F8' : '#0F1214',
+        paper: mode === 'light' ? '#FFFFFF' : '#1A1D1F',
+      },
+      text: {
+        primary: mode === 'light' ? '#1F2937' : '#E5E7EB', // Cinza escuro / Cinza claro
+        secondary: mode === 'light' ? '#6B7280' : '#9CA3AF',
+      },
+      error: {
+        main: '#EF4444',
+      },
+      success: {
+        main: '#10B981',
+      },
+      // Cores Semânticas (Nossas cores "Pastel" mas ajustadas para contraste)
+      custom: {
+        purple: mode === 'light' ? '#F3E8FF' : '#3B0764', // Fundo
+        purpleText: mode === 'light' ? '#7E22CE' : '#D8B4FE', // Texto
+        
+        pink: mode === 'light' ? '#FFE4E6' : '#881337',
+        pinkText: mode === 'light' ? '#BE123C' : '#FB7185',
+        
+        orange: mode === 'light' ? '#FFEDD5' : '#7C2D12',
+        orangeText: mode === 'light' ? '#C2410C' : '#FDBA74',
+        
+        green: mode === 'light' ? '#D1FAE5' : '#064E3B',
+        greenText: mode === 'light' ? '#047857' : '#6EE7B7',
+        
+        blue: mode === 'light' ? '#DBEAFE' : '#1E3A8A',
+        blueText: mode === 'light' ? '#1D4ED8' : '#93C5FD',
+
+        border: mode === 'light' ? '#E5E7EB' : '#374151', // Borda sutil
+      }
+    },
+    typography: {
+      fontFamily: '"DM Sans", "Inter", sans-serif',
+      h1: { fontFamily: '"Playfair Display", serif', fontWeight: 700 },
+      h2: { fontFamily: '"Playfair Display", serif', fontWeight: 700 },
+      h3: { fontFamily: '"Playfair Display", serif', fontWeight: 600 },
+      h4: { fontFamily: '"Playfair Display", serif', fontWeight: 600 },
+      h5: { fontFamily: '"Playfair Display", serif', fontWeight: 600, letterSpacing: '-0.5px' },
+      h6: { fontFamily: '"DM Sans", sans-serif', fontWeight: 600 },
+      button: { textTransform: 'none', fontWeight: 600, borderRadius: 8 },
+    },
+    shape: {
+      borderRadius: 16, // Bordas modernas (nem quadrado, nem pílula exagerada)
+    },
+    components: {
+      // Cards com sombra difusa e borda sutil
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+            boxShadow: mode === 'light' 
+              ? '0px 2px 4px rgba(0,0,0,0.02), 0px 8px 24px rgba(0,0,0,0.04)' // Sombra "SaaS" moderna
+              : '0px 2px 4px rgba(0,0,0,0.2)', // Sombra dark sutil
+            border: `1px solid ${mode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.08)'}`,
+          },
+        },
+      },
+      // Botões mais profissionais
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12, // Levemente arredondado
+            padding: '10px 24px',
+            boxShadow: 'none',
+            '&:hover': { boxShadow: '0px 4px 12px rgba(37, 99, 235, 0.2)' }, // Glow azul no hover
+          },
+          containedPrimary: {
+            background: mode === 'light' 
+              ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)' // Gradiente sutil
+              : '#3B82F6',
+          }
+        },
+      },
+      // Inputs mais limpos
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 12,
+              backgroundColor: mode === 'light' ? '#FFFFFF' : '#25282C',
+              '& fieldset': { borderColor: mode === 'light' ? '#E5E7EB' : '#374151' },
+              '&:hover fieldset': { borderColor: mode === 'light' ? '#BFDBFE' : '#60A5FA' },
+              '&.Mui-focused fieldset': { borderColor: mode === 'light' ? '#2563EB' : '#3B82F6', borderWidth: '2px' },
             }
-        },
-        typography: {
-            fontFamily: '"DM Sans", sans-serif',
-            h1: { fontFamily: '"Playfair Display", serif' },
-            h2: { fontFamily: '"Playfair Display", serif' },
-            h3: { fontFamily: '"Playfair Display", serif' },
-            h4: { fontFamily: '"Playfair Display", serif' },
-            h5: { fontFamily: '"Playfair Display", serif' },
-            h6: { fontFamily: '"Playfair Display", serif' },
-            button: { textTransform: 'none', fontWeight: 700 },
-        },
-        shape: { borderRadius: 24 },
-        components: {
-            MuiPaper: {
-                styleOverrides: {
-                    root: {
-                        backgroundImage: 'none',
-                        boxShadow: mode === 'light' ? '0px 4px 20px rgba(0,0,0,0.02)' : 'none',
-                        border: mode === 'light' ? '1px solid rgba(0,0,0,0.05)' : '1px solid rgba(255,255,255,0.1)',
-                    },
-                },
-            },
-            MuiButton: {
-                styleOverrides: {
-                    root: { borderRadius: 50 },
-                    containedPrimary: {
-                        backgroundColor: mode === 'light' ? '#333' : '#fff',
-                        color: mode === 'light' ? '#fff' : '#000',
-                        '&:hover': {
-                            backgroundColor: mode === 'light' ? '#000' : '#ddd',
-                        }
-                    }
-                },
-            },
-        },
-    }), [mode]);
+          }
+        }
+      },
+      // Diálogos (Modais) com backdrop blur
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 20,
+          }
+        }
+      },
+      MuiBackdrop: {
+        styleOverrides: {
+          root: {
+            backdropFilter: 'blur(4px)', // Efeito de vidro no fundo
+            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+          }
+        }
+      }
+    },
+  });
 
-    return (
-        <ThemeContext.Provider value={{ mode, toggleColorMode }}>
-            <ThemeProvider theme={theme}>
-                <CssBaseline />
-                {children}
-            </ThemeProvider>
-        </ThemeContext.Provider>
-    );
+  const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
+
+  return (
+    <ThemeContext.Provider value={{ mode, toggleColorMode }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </ThemeContext.Provider>
+  );
 };

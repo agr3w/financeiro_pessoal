@@ -1,67 +1,87 @@
-import React, { useContext } from 'react'; // Adicione useContext
-import { Card, CardContent, Typography, Box, Button, Chip, IconButton } from '@mui/material';
-import { CheckCircle, Schedule, DeleteOutline } from '@mui/icons-material'; // Importe DeleteOutline
-import { FinanceContext } from '../../context/FinanceContext'; // Importe Contexto
+import React, { useContext } from 'react';
+import { Card, CardContent, Typography, LinearProgress, Box, Button, Chip, IconButton } from '@mui/material';
+import { CheckCircle, Schedule, DeleteOutline } from '@mui/icons-material';
+import { FinanceContext } from '../../context/FinanceContext';
+import { useTheme, alpha } from '@mui/material/styles';
 
 export default function LoanTracker({ loan, onPay }) {
-  const { deletePlan } = useContext(FinanceContext); // Pegue a função delete
-  // loan agora contém: { title, totalDebt, currentInstallment: { number, amount, paid, dueDate } }
-  
+  const { deletePlan } = useContext(FinanceContext);
+  const theme = useTheme();
   const { currentInstallment } = loan;
 
+  // Cálculo de progresso da parcela (apenas visual, ou poderia ser do total)
+  // Aqui vamos deixar fixo ou baseado no total se tivesse essa info fácil
+  const progress = 0; // Se quiser fazer progresso total, precisaria de loan.paidAmount / loan.totalDebt
+
   return (
-    <Card sx={{ mb: 2, borderRadius: 3, border: '1px solid #f0f0f0', position: 'relative' }}>
-        
-      {/* Botão de Deletar (Canto Superior Direito) */}
+    <Card 
+        elevation={0}
+        sx={{ 
+            mb: 2, 
+            borderRadius: 3, 
+            position: 'relative',
+            border: `1px solid ${theme.palette.divider}`,
+            transition: 'box-shadow 0.2s',
+            '&:hover': { boxShadow: theme.shadows[4] }
+        }}
+    >
       <IconButton 
         size="small" 
         onClick={() => {
-            if(window.confirm('Tem certeza? Isso apagará todo o histórico deste parcelamento.')) {
-                deletePlan(loan.id);
-            }
+            if(window.confirm('Excluir este plano recorrente?')) deletePlan(loan.id);
         }}
-        sx={{ 
-            position: 'absolute', 
-            right: 8, 
-            top: 8, 
-            color: '#e0e0e0', // Bem discreto por padrão
-            zIndex: 10,
-            '&:hover': { color: '#ef5350' } // Vermelho ao passar o mouse
-        }}
+        sx={{ position: 'absolute', right: 8, top: 8, color: 'text.disabled', '&:hover': { color: 'error.main' } }}
       >
         <DeleteOutline fontSize="small" />
       </IconButton>
 
       <CardContent>
-        {/* Adicionei padding-right (pr: 4) para o texto não ficar embaixo do botão de deletar */}
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1} sx={{ pr: 4 }}>
-          <Typography variant="h6" fontWeight="bold">{loan.title}</Typography>
-          {/* Status Visual */}
-          {currentInstallment.paid ? (
-            <Chip icon={<CheckCircle />} label="Paga" color="success" size="small" variant="outlined" />
-          ) : (
-            <Chip icon={<Schedule />} label="Pendente" color="warning" size="small" variant="outlined" />
-          )}
+        <Box pr={4} mb={1}>
+             <Typography variant="subtitle1" fontWeight="bold" noWrap>{loan.title}</Typography>
+             <Typography variant="caption" color="text.secondary">
+                {loan.category || 'Parcelamento'}
+             </Typography>
         </Box>
 
-        <Box display="flex" justifyContent="space-between" sx={{ mt: 2, p: 2, bgcolor: '#fafafa', borderRadius: 3 }}>
+        {/* Status Chip */}
+        <Box mb={2}>
+            {currentInstallment.paid ? (
+                <Chip icon={<CheckCircle sx={{fontSize: 16}}/>} label="Pago este mês" color="success" size="small" variant="soft" />
+            ) : (
+                <Chip icon={<Schedule sx={{fontSize: 16}}/>} label="Pendente" color="warning" size="small" variant="outlined" />
+            )}
+        </Box>
+
+        {/* Área de Ação */}
+        <Box 
+            sx={{ 
+                p: 2, 
+                bgcolor: alpha(theme.palette.secondary.main, 0.05), // Fundo Teal bem suave
+                borderRadius: 2, 
+                border: `1px dashed ${alpha(theme.palette.secondary.main, 0.3)}`,
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center'
+            }}
+        >
           <Box>
-            <Typography variant="caption" color="text.secondary">Vencimento</Typography>
-            <Typography variant="body1" fontWeight="bold">
-              {new Date(currentInstallment.dueDate).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}
+            <Typography variant="caption" display="block" color="text.secondary" fontWeight={600}>
+                VENC. {new Date(currentInstallment.dueDate).toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'})}
             </Typography>
-          </Box>
-          <Box>
-             <Typography variant="caption" color="text.secondary">Parcela {currentInstallment.number}</Typography>
-             <Typography variant="body1" fontWeight="bold">R$ {currentInstallment.amount.toFixed(2)}</Typography>
+            <Typography variant="h6" fontWeight="bold" color="secondary.main">
+                R$ {currentInstallment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+                Parcela {currentInstallment.number}
+            </Typography>
           </Box>
           
           <Button 
-            size="small" 
             variant="contained" 
+            color="secondary" // Botão Teal
             onClick={() => onPay(loan.id, currentInstallment.number)} 
-            disabled={currentInstallment.paid} // Desabilita se já pagou
-            sx={{ borderRadius: 4, px: 3 }}
+            disabled={currentInstallment.paid}
+            sx={{ borderRadius: 2, px: 3, color: 'white' }}
           >
             {currentInstallment.paid ? 'OK' : 'Pagar'}
           </Button>
