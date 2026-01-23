@@ -9,6 +9,7 @@ const Settings = lazy(() => import("./pages/admin/Settings"));
 const Categories = lazy(() => import("./pages/admin/Categories"));
 const Login = lazy(() => import("./pages/public/Login"));
 const NotFound = lazy(() => import("./pages/public/NotFound"));
+const AdminPanel = lazy(() => import("./pages/admin/AdminPanel"));
 
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
@@ -36,6 +37,10 @@ export default function Router() {
         } />
 
         <Route path="*" element={<NotFound />} />
+
+        <Route path="/admin" element={
+          <PrivateRoute><AdminPanel /></PrivateRoute>
+        } />
 
       </Routes>
     </Suspense>

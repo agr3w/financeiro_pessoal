@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { Container, Paper, TextField, Button, Typography, Box, Alert } from '@mui/material';
+import React, { useState, useContext } from 'react'; // Adicione useContext
+import { Container, Paper, TextField, Button, Typography, Box, Alert, Chip } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
+import { FinanceContext } from '../../context/FinanceContext'; // Importe o contexto
 import { useNavigate } from 'react-router-dom';
+import { Engineering } from '@mui/icons-material'; // Ícone de obra
 
 export default function Login() {
     const [isLogin, setIsLogin] = useState(true);
@@ -11,49 +13,59 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
 
     const { login, signup } = useAuth();
+    const { maintenanceMode } = useContext(FinanceContext); // Pega o status
     const navigate = useNavigate();
+
+    // EMAIL DO ADMIN (Deve ser o mesmo do AdminPanel)
+    const ADMIN_EMAIL = "test@test.com";
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        
+        // --- LÓGICA DE BLOQUEIO ---
+        if (maintenanceMode && email !== ADMIN_EMAIL) {
+            setError('MANUTENÇÃO: Apenas administradores podem entrar no momento.');
+            return;
+        }
+        // --------------------------
+
         setLoading(true);
 
         try {
             if (isLogin) {
                 await login(email, password);
             } else {
+                // Também bloqueia criação de conta em manutenção
+                if (maintenanceMode) {
+                     throw new Error("Novos registros estão desabilitados durante a manutenção.");
+                }
                 await signup(email, password);
             }
-            navigate('/'); // Vai para o Dashboard após sucesso
+            navigate('/'); 
         } catch (err) {
-            setError('Falha ao autenticar. Verifique seus dados.');
+            setError(err.message || 'Falha ao autenticar.');
             console.error(err);
         }
         setLoading(false);
     };
 
     return (
-        <Box
-            sx={{
-                minHeight: '100vh',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: 'background.default'
-            }}
-        >
+        <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
             <Container maxWidth="xs">
-                <Paper
-                    elevation={0}
-                    sx={{
-                        p: 4,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        borderRadius: 4,
-                        border: '1px solid rgba(0,0,0,0.05)'
-                    }}
-                >
+                {/* AVISO VISUAL DE MANUTENÇÃO */}
+                {maintenanceMode && (
+                    <Box textAlign="center" mb={2}>
+                        <Chip 
+                            icon={<Engineering />} 
+                            label="Sistema em Manutenção" 
+                            color="warning" 
+                            sx={{ fontWeight: 'bold', px: 1 }} 
+                        />
+                    </Box>
+                )}
+
+                <Paper elevation={0} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', borderRadius: 4, border: '1px solid rgba(0,0,0,0.05)' }}>
                     <Typography variant="h4" fontFamily="serif" sx={{ mb: 1, fontWeight: 'bold' }}>
                         {isLogin ? 'Bem-vindo' : 'Criar Conta'}
                     </Typography>
@@ -62,6 +74,13 @@ export default function Login() {
                     </Typography>
 
                     {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
+
+                    {/* Exibe mensagem amigável se estiver em manutenção e sem erro ainda */}
+                    {(maintenanceMode && !error) && (
+                         <Alert severity="info" sx={{ width: '100%', mb: 2 }}>
+                            O site está temporariamente fechado para usuários. Tente novamente mais tarde.
+                         </Alert>
+                    )}
 
                     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
                         <TextField

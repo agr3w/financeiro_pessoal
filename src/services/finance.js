@@ -1,7 +1,7 @@
 import { db } from './firebase';
 import { 
-  collection, addDoc, deleteDoc, updateDoc, doc, 
-  onSnapshot, query, where, Timestamp 
+  collection, addDoc, deleteDoc, updateDoc, doc, // Removido 'fs' daqui
+  onSnapshot, query, where, Timestamp, setDoc 
 } from 'firebase/firestore';
 
 // --- TRANSAÇÕES ---
@@ -155,4 +155,73 @@ export const removeCategory = async (categoryId) => {
   } catch (error) {
     console.error("Erro ao deletar categoria:", error);
   }
+};
+
+// --- SISTEMA DE NOTIFICAÇÕES GLOBAIS ---
+
+// Criar Notificação (Só o Admin vai usar)
+export const createSystemNotification = async (data) => {
+  try {
+    await addDoc(collection(db, "system_notifications"), {
+      ...data,
+      createdAt: Timestamp.now()
+    });
+  } catch (error) {
+    console.error("Erro ao criar notificação:", error);
+  }
+};
+
+// Ler Notificações (Todos usam)
+export const subscribeToSystemNotifications = (callback) => {
+  // Pega todas, ordenadas por data
+  const q = query(
+    collection(db, "system_notifications")
+    // Sem 'orderBy' no banco para evitar aquele erro de índice, ordenamos no front
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
+    }));
+    
+    // Ordena: Mais recentes primeiro
+    data.sort((a, b) => b.createdAt - a.createdAt);
+    
+    callback(data);
+  });
+};
+
+// Deletar Notificação (Admin)
+export const removeSystemNotification = async (id) => {
+  try {
+    await deleteDoc(doc(db, "system_notifications", id));
+  } catch (error) {
+    console.error("Erro ao deletar notificação:", error);
+  }
+};
+
+// --- CONFIGURAÇÕES GLOBAIS DO SISTEMA ---
+
+// Atualizar status de manutenção (Admin)
+export const updatesystemSettings = async (settings) => {
+  try {
+    // Usamos setDoc com merge para criar se não existir ou atualizar
+    await setDoc(doc(db, "system_settings", "general"), settings, { merge: true });
+  } catch (error) {
+    console.error("Erro ao atualizar configurações:", error);
+  }
+};
+
+// Ler configurações (Todas as telas)
+export const subscribeToSystemSettings = (callback) => {
+  return onSnapshot(doc(db, "system_settings", "general"), (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      callback(docSnapshot.data());
+    } else {
+      // Valor padrão se não existir no banco ainda
+      callback({ maintenanceMode: false });
+    }
+  });
 };

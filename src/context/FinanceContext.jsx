@@ -3,7 +3,10 @@ import {
   createTransaction, subscribeToTransactions, 
   createRecurringPlan, subscribeToPlans, 
   removePlan, updatePlan,
-  createCategory, subscribeToCategories, updateCategory, removeCategory
+  createCategory, subscribeToCategories, updateCategory, removeCategory,
+  // Novos imports para notificações
+  createSystemNotification, subscribeToSystemNotifications, removeSystemNotification,
+  updatesystemSettings, subscribeToSystemSettings // <--- Novos Imports
 } from '../services/finance';
 import { useAuth } from './AuthContext';
 
@@ -16,8 +19,32 @@ export const FinanceProvider = ({ children }) => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [loanPlans, setLoanPlans] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
+  
+  // Novo estado para notificações
+  const [notifications, setNotifications] = useState([]);
+  
+  // Novo estado para configurações globais
+  const [systemSettings, setSystemSettings] = useState({ maintenanceMode: false });
 
-  // --- 1. CONEXÃO COM FIREBASE ---
+  // --- 0. NOTIFICAÇÕES GLOBAIS E SETTINGS ---
+  useEffect(() => {
+    // Essa inscrição não depende do user.uid, pois são globais (avisos do sistema para todos)
+    const unsubscribeNotes = subscribeToSystemNotifications((data) => {
+      setNotifications(data);
+    });
+    
+    // Nova subscrição de configurações (independente de login)
+    const unsubscribeSettings = subscribeToSystemSettings((data) => {
+      setSystemSettings(data);
+    });
+
+    return () => {
+      unsubscribeNotes();
+      unsubscribeSettings();
+    };
+  }, []); // Roda uma vez na montagem
+
+  // --- 1. CONEXÃO COM FIREBASE (DADOS DO USUÁRIO) ---
   useEffect(() => {
     if (!user) {
       setAllTransactions([]);
@@ -165,6 +192,15 @@ export const FinanceProvider = ({ children }) => {
   const editCategoryAction = async (catId, newData) => { await updateCategory(catId, newData); };
   const removeCategoryAction = async (catId) => { await removeCategory(catId); };
 
+  // Ações de NOTIFICAÇÃO (Admin)
+  const sendNotification = async (data) => { await createSystemNotification(data); };
+  const deleteNotification = async (id) => { await removeSystemNotification(id); };
+
+  // Ações de ADMIN
+  const toggleMaintenanceMode = async () => {
+    await updatesystemSettings({ maintenanceMode: !systemSettings.maintenanceMode });
+  };
+
   return (
     <FinanceContext.Provider value={{ 
       selectedDate, setSelectedDate,
@@ -180,7 +216,14 @@ export const FinanceProvider = ({ children }) => {
       categories: allCategories,
       addCategory: addCategoryAction,
       editCategory: editCategoryAction,
-      removeCategory: removeCategoryAction
+      removeCategory: removeCategoryAction,
+      // Novos exports de notificação
+      notifications,
+      sendNotification, 
+      deleteNotification,
+      // Novos exports
+      maintenanceMode: systemSettings.maintenanceMode,
+      toggleMaintenanceMode
     }}>
       {children}
     </FinanceContext.Provider>

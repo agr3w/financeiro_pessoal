@@ -9,7 +9,7 @@ const formatMonth = (date) => {
 
 export default function MonthSelector({ currentDate, onChange }) {
     const theme = useTheme();
-    
+
     const [isPending, startTransition] = useTransition();
     const [loadingDir, setLoadingDir] = useState(null); // 'prev' | 'next' | null
 
@@ -35,21 +35,21 @@ export default function MonthSelector({ currentDate, onChange }) {
         transition: 'all 0.3s ease',
         // Se estiver carregando, removemos interações de hover para não distrair
         '&:hover': !isLoading ? {
-            color: '#fff', 
+            color: '#fff',
             borderColor: 'text.secondary',
             transform: 'translateY(-2px)',
         } : {},
         pointerEvents: isPending ? 'none' : 'auto',
         // Apenas diminui a opacidade se o OUTRO botão estiver sendo clicado
-        opacity: (isPending && !isLoading) ? 0.5 : 1 
+        opacity: (isPending && !isLoading) ? 0.5 : 1
     });
 
     return (
         <Box display="flex" alignItems="center" justifyContent="center" gap={3} sx={{ mb: 4 }}>
 
-            <IconButton 
-                onClick={() => handleChangeMonth(-1)} 
-                size="small" 
+            <IconButton
+                onClick={() => handleChangeMonth(-1)}
+                size="small"
                 sx={getButtonStyle(isPending && loadingDir === 'prev')}
                 disabled={isPending}
             >
@@ -78,9 +78,9 @@ export default function MonthSelector({ currentDate, onChange }) {
                 {formatMonth(currentDate)}
             </Typography>
 
-            <IconButton 
-                onClick={() => handleChangeMonth(1)} 
-                size="small" 
+            <IconButton
+                onClick={() => handleChangeMonth(1)}
+                size="small"
                 sx={getButtonStyle(isPending && loadingDir === 'next')}
                 disabled={isPending}
             >

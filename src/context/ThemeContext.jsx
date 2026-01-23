@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useMemo, useEffect } from 'react';
+import React, { createContext, useState, useContext, useMemo } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 
 const ThemeContext = createContext();
@@ -6,13 +6,31 @@ const ThemeContext = createContext();
 export const useThemeContext = () => useContext(ThemeContext);
 
 export const CustomThemeProvider = ({ children }) => {
+  // 1. Tema (Claro/Escuro)
   const [mode, setMode] = useState(localStorage.getItem('themeMode') || 'light');
+
+  // 2. Preferências do Dashboard (Novo)
+  const [dashboardPrefs, setDashboardPrefs] = useState(() => {
+    const saved = localStorage.getItem('dashboardPrefs');
+    return saved ? JSON.parse(saved) : { 
+      showAvailabilityAsPercentage: true, // true = %, false = R$
+      privacyMode: false // true = borra os valores
+    };
+  });
 
   const toggleColorMode = () => {
     setMode((prevMode) => {
       const newMode = prevMode === 'light' ? 'dark' : 'light';
       localStorage.setItem('themeMode', newMode);
       return newMode;
+    });
+  };
+
+  const toggleDashboardPref = (key) => {
+    setDashboardPrefs(prev => {
+      const newPrefs = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('dashboardPrefs', JSON.stringify(newPrefs));
+      return newPrefs;
     });
   };
 
@@ -144,7 +162,7 @@ export const CustomThemeProvider = ({ children }) => {
   const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleColorMode }}>
+    <ThemeContext.Provider value={{ mode, toggleColorMode, dashboardPrefs, toggleDashboardPref }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
