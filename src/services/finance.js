@@ -1,7 +1,7 @@
 import { db } from './firebase';
-import { 
+import {
   collection, addDoc, deleteDoc, updateDoc, doc, // Removido 'fs' daqui
-  onSnapshot, query, where, Timestamp, setDoc 
+  onSnapshot, query, where, Timestamp, setDoc, getDoc
 } from 'firebase/firestore';
 
 // --- TRANSAÇÕES ---
@@ -22,21 +22,21 @@ export const createTransaction = async (userId, data) => {
 export const subscribeToTransactions = (userId, callback) => {
   // REMOVIDO: orderBy("date", "desc") para evitar erro de índice
   const q = query(
-    collection(db, "transactions"), 
+    collection(db, "transactions"),
     where("userId", "==", userId)
   );
-  
+
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       date: doc.data().date ? doc.data().date.toDate() : new Date()
     }));
-    
+
     // ORDENAÇÃO NO CLIENTE (Mais seguro para projetos iniciais)
     // Do mais recente para o mais antigo
     data.sort((a, b) => b.date - a.date);
-    
+
     callback(data);
   });
 };
@@ -66,10 +66,10 @@ export const createRecurringPlan = async (userId, planData) => {
 export const subscribeToPlans = (userId, callback) => {
   // REMOVIDO: orderBy("createdAt", "desc")
   const q = query(
-    collection(db, "recurring_plans"), 
+    collection(db, "recurring_plans"),
     where("userId", "==", userId)
   );
-  
+
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => {
       const raw = doc.data();
@@ -178,17 +178,17 @@ export const subscribeToSystemNotifications = (callback) => {
     collection(db, "system_notifications")
     // Sem 'orderBy' no banco para evitar aquele erro de índice, ordenamos no front
   );
-  
+
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
     }));
-    
+
     // Ordena: Mais recentes primeiro
     data.sort((a, b) => b.createdAt - a.createdAt);
-    
+
     callback(data);
   });
 };
@@ -224,4 +224,25 @@ export const subscribeToSystemSettings = (callback) => {
       callback({ maintenanceMode: false });
     }
   });
+};
+
+// --- SISTEMA DE ADMINISTRAÇÃO ---
+
+// Verifica se o email está na lista de admins do banco
+export const checkAdminPermission = async (email) => {
+  if (!email) return false;
+  try {
+    // Buscando o documento 'permissions' dentro da coleção 'system_config'
+    const docRef = doc(db, "system_config", "permissions");
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const adminsList = docSnap.data().admins || [];
+      return adminsList.includes(email);
+    }
+    return false;
+  } catch (error) {
+    console.error("Erro ao verificar permissão:", error);
+    return false;
+  }
 };

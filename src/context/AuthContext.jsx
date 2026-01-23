@@ -4,12 +4,13 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
-    updatePassword,      // <--- Novo
-    deleteUser,          // <--- Novo
-    reauthenticateWithCredential, // <--- Novo
-    EmailAuthProvider    // <--- Novo
+    updatePassword,
+    deleteUser,
+    reauthenticateWithCredential,
+    EmailAuthProvider
 } from "firebase/auth";
 import { auth } from "../services/firebase";
+import { checkAdminPermission } from "../services/finance"; // <--- Importe a função
 
 const AuthContext = createContext();
 
@@ -17,6 +18,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false); // <--- Novo Estado
     const [loading, setLoading] = useState(true);
 
     const signup = (email, password) => {
@@ -28,10 +30,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        // Limpa estado ao sair
+        setIsAdmin(false);
         return signOut(auth);
     };
 
-    // --- NOVAS FUNÇÕES DE SEGURANÇA ---
+    // --- FUNÇÕES DE SEGURANÇA ---
 
     // Alterar Senha
     const updateUserPassword = async (currentPassword, newPassword) => {
@@ -57,9 +61,21 @@ export const AuthProvider = ({ children }) => {
         await deleteUser(user);
     };
 
+    // --- REGRAS DE AUTENTICAÇÃO E ADMIN ---
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
+            
+            if (currentUser) {
+                // Verifica no banco (ou lista hardcoded) se é admin
+                // Essa chamada é assíncrona, por isso o async/await dentro do callback
+                const adminStatus = await checkAdminPermission(currentUser.email);
+                setIsAdmin(adminStatus);
+            } else {
+                setIsAdmin(false);
+            }
+            
+            // Só libera o carregamento da tela depois de definir se é admin ou não
             setLoading(false);
         });
         return unsubscribe;
@@ -67,11 +83,12 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
+        isAdmin, // <--- Exporta para o resto do app usar
         signup,
         login,
         logout,
-        updateUserPassword, // Exporta nova função
-        deleteUserAccount   // Exporta nova função
+        updateUserPassword,
+        deleteUserAccount
     };
 
     return (

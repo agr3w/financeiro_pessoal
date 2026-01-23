@@ -11,20 +11,17 @@ import { useAuth } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 export default function AdminPanel() {
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth(); // <--- Pegando isAdmin do contexto
     const { 
         notifications, sendNotification, deleteNotification,
         maintenanceMode, toggleMaintenanceMode
     } = useContext(FinanceContext);
 
-    // --- CONFIGURAÇÃO ---
-    // Substitua pelo seu email real de admin
-    const ADMIN_EMAIL = "test@test.com";
-
     const [form, setForm] = useState({ title: '', message: '', type: 'info' });
 
-    // Proteção de Rota Simplificada
-    if (user?.email !== ADMIN_EMAIL) {
+    // --- PROTEÇÃO DE ROTA (AGORA DINÂMICA) ---
+    // Se o usuário não for admin, redireciona para a home
+    if (!isAdmin) {
         return <Navigate to="/" />;
     }
 

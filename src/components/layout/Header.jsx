@@ -6,7 +6,8 @@ import {
 } from '@mui/material';
 import {
   NotificationsNone, Settings, Logout, Person,
-  KeyboardArrowDown, Category, Info, Warning, NewReleases, ExpandMore, ExpandLess
+  KeyboardArrowDown, Category, Info, Warning, NewReleases, ExpandMore, ExpandLess,
+  AdminPanelSettings // <--- Ícone Novo
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { FinanceContext } from '../../context/FinanceContext';
@@ -16,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 const NotificationItem = ({ note }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
-  const LIMIT = 80; // Limite de caracteres antes do "Ler mais"
+  const LIMIT = 80;
   const isLong = note.message.length > LIMIT;
   const isUpdate = note.type === 'update'; 
 
@@ -83,7 +84,7 @@ const NotificationItem = ({ note }) => {
 };
 
 export default function Header({ title, subtitle }) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth(); // <--- Pegamos o isAdmin do contexto
   const { notifications } = useContext(FinanceContext);
   const navigate = useNavigate();
 
@@ -235,6 +236,17 @@ export default function Header({ title, subtitle }) {
               <MenuItem onClick={handleGoToSettings}>
                 <ListItemIcon><Settings fontSize="small" /></ListItemIcon>Configurações
               </MenuItem>
+
+               {/* ITEM SECRETO DE ADMIN - SÓ APARECE SE FOR ADMIN */}
+              {isAdmin && (
+                <MenuItem onClick={() => { navigate('/admin'); handleCloseMenu(); }} sx={{ color: 'warning.main' }}>
+                  <ListItemIcon>
+                    <AdminPanelSettings fontSize="small" color="warning" />
+                  </ListItemIcon>
+                  Painel Admin
+                </MenuItem>
+              )}
+
               <MenuItem onClick={() => { navigate('/categories'); handleCloseMenu(); }}>
                 <ListItemIcon><Category fontSize="small" /></ListItemIcon>Categorias
               </MenuItem>
