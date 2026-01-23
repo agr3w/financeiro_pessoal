@@ -1,12 +1,13 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   createTransaction, subscribeToTransactions, 
+  updateTransaction, removeTransaction, // <--- Novos Imports
   createRecurringPlan, subscribeToPlans, 
   removePlan, updatePlan,
   createCategory, subscribeToCategories, updateCategory, removeCategory,
   // Novos imports para notificações
   createSystemNotification, subscribeToSystemNotifications, removeSystemNotification,
-  updatesystemSettings, subscribeToSystemSettings // <--- Novos Imports
+  updatesystemSettings, subscribeToSystemSettings
 } from '../services/finance';
 import { useAuth } from './AuthContext';
 
@@ -116,10 +117,20 @@ export const FinanceProvider = ({ children }) => {
 
   }, [selectedDate, allTransactions, loanPlans]);
 
-  // --- 3. AÇÕES ---
+  // --- 3. AÇÕES DE TRANSAÇÃO ---
   const addTransaction = async (data) => {
     if (!user) return;
     await createTransaction(user.uid, { ...data, date: data.date || selectedDate });
+  };
+
+  const updateTransactionAction = async (id, data) => {
+    if (!user) return;
+    await updateTransaction(id, data);
+  };
+
+  const deleteTransactionAction = async (id) => {
+    if (!user) return;
+    await removeTransaction(id);
   };
 
   const addRecurringPlanAction = async (planData) => {
@@ -210,6 +221,8 @@ export const FinanceProvider = ({ children }) => {
       income: monthIncome, 
       expense: monthExpense, 
       addTransaction, 
+      updateTransaction: updateTransactionAction,
+      deleteTransaction: deleteTransactionAction,
       payInstallment,
       addRecurringPlan: addRecurringPlanAction,
       deletePlan: deletePlanAction,

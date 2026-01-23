@@ -1,17 +1,18 @@
 import React, { useContext, useState, useMemo } from 'react';
-import {
-  Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography,
-  Box, TextField, InputAdornment, Button, Divider, IconButton, Collapse
+import { 
+  Paper, List, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, 
+  Box, TextField, InputAdornment, Button, IconButton, Menu, MenuItem, 
+  ListItemIcon, Dialog, DialogTitle, DialogContent, DialogActions 
 } from '@mui/material';
-import {
-  Fastfood, ShoppingBag, LocalGasStation, Bolt, Star, Search,
-  ExpandMore, KeyboardArrowDown, CalendarMonth
+import { 
+  Fastfood, ShoppingBag, LocalGasStation, Bolt, Star, Search, 
+  MoreVert, Edit, Delete, KeyboardArrowDown 
 } from '@mui/icons-material';
 import { FinanceContext } from '../../context/FinanceContext';
 import { useTheme, alpha } from '@mui/material/styles';
+import ConfirmDialog from '../../components/ui/ConfirmDialog'; // <--- Importe o novo componente
 
-// --- HELPERS ---
-
+// Helpers (mantenha os mesmos do arquivo anterior)
 const getIconData = (category, theme) => {
   const map = {
     'Alimentação': { icon: <Fastfood />, color: theme.palette.custom.orange, text: theme.palette.custom.orangeText },
@@ -39,31 +40,91 @@ const getDateLabel = (dateObj) => {
   if (isSameDay(dateObj, today)) return "Hoje";
   if (isSameDay(dateObj, yesterday)) return "Ontem";
 
-  return dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' }); // Ex: 15 de janeiro
+  return dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
 };
 
 export default function TransactionList() {
-  const { transactions } = useContext(FinanceContext);
+  // CORREÇÃO: Usando os nomes corretos exportados pelo FinanceContext (deleteTransaction e updateTransaction)
+  const { transactions, deleteTransaction, updateTransaction } = useContext(FinanceContext); 
   const theme = useTheme();
 
-  // --- ESTADOS LOCAIS ---
+  // Estados
   const [searchTerm, setSearchTerm] = useState('');
-  const [limit, setLimit] = useState(5); // Começa mostrando apenas 5
+  const [limit, setLimit] = useState(5);
+  
+  // Estados para Menu e Ações
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedTx, setSelectedTx] = useState(null); // Transação selecionada para ação
+  
+  // Modais
+  const [openDelete, setOpenDelete] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+  
+  // Estado do Form de Edição
+  const [editForm, setEditForm] = useState({ label: '', amount: '' });
 
-  // --- LÓGICA DE FILTRO E AGRUPAMENTO ---
+  // --- HANDLERS ---
 
+  const handleOpenMenu = (event, transaction) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedTx(transaction);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
+
+  // --- DELETE FLOW ---
+  const handleDeleteClick = () => {
+    handleCloseMenu();
+    setOpenDelete(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedTx) {
+      // CORREÇÃO: Chamando deleteTransaction em vez de removeTransaction
+      await deleteTransaction(selectedTx.id);
+      setOpenDelete(false);
+      setSelectedTx(null);
+    }
+  };
+
+  // --- EDIT FLOW ---
+  const handleEditClick = () => {
+    handleCloseMenu();
+    setEditForm({ 
+        label: selectedTx.label, 
+        amount: String(Math.abs(selectedTx.amount)) // valor como string
+    });
+    setOpenEdit(true);
+  };
+
+  const saveEdit = async () => {
+    if (!selectedTx || !editForm.label || !editForm.amount) return;
+    
+    const originalSignal = selectedTx.amount < 0 ? -1 : 1;
+    const newAmount = parseFloat(editForm.amount) * originalSignal;
+
+    // CORREÇÃO: Chamando updateTransaction em vez de editTransaction
+    await updateTransaction(selectedTx.id, {
+        label: editForm.label,
+        amount: newAmount
+    });
+
+    setOpenEdit(false);
+    setSelectedTx(null);
+  };
+
+  // --- ORDENAÇÃO E FILTRO ---
   const processedData = useMemo(() => {
-    // 1. Filtrar pela busca
-    const filtered = transactions.filter(t =>
-      t.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.category.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = (transactions || []).filter(t =>
+      (t.label || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.category || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // 2. Paginação (Corte)
     const visible = filtered.slice(0, limit);
     const hasMore = filtered.length > limit;
 
-    // 3. Agrupamento por Data
     const groups = visible.reduce((acc, item) => {
       const dateKey = getDateLabel(new Date(item.date));
       if (!acc[dateKey]) acc[dateKey] = [];
@@ -74,118 +135,59 @@ export default function TransactionList() {
     return { groups, hasMore, totalFiltered: filtered.length };
   }, [transactions, searchTerm, limit]);
 
-  const handleLoadMore = () => {
-    setLimit(prev => prev + 5);
-  };
-
-  // --- RENDER ---
+  const handleLoadMore = () => setLimit(prev => prev + 5);
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        bgcolor: 'background.paper',
-        borderRadius: 3,
-        border: `1px solid ${theme.palette.divider}`,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%' // Para ocupar altura do grid
-      }}
-    >
-      {/* CABEÇALHO COM BUSCA */}
+    <Paper elevation={0} sx={{ bgcolor: 'background.paper', borderRadius: 3, border: `1px solid ${theme.palette.divider}`, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      
       <Box p={2} borderBottom={`1px solid ${theme.palette.divider}`}>
         <TextField
-          fullWidth
-          size="small"
-          placeholder="Buscar transação..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setLimit(5); // Reseta paginação ao buscar
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search fontSize="small" color="action" />
-              </InputAdornment>
-            ),
-            sx: { borderRadius: 2, bgcolor: theme.palette.background.default }
-          }}
+          fullWidth size="small" placeholder="Buscar..." value={searchTerm}
+          onChange={(e) => { setSearchTerm(e.target.value); setLimit(5); }}
+          InputProps={{ startAdornment: (<InputAdornment position="start"><Search fontSize="small" /></InputAdornment>), sx: { borderRadius: 2, bgcolor: theme.palette.background.default } }}
         />
       </Box>
 
-      {/* LISTA VAZIA */}
       {processedData.totalFiltered === 0 && (
         <Box p={4} textAlign="center" color="text.secondary">
           <Typography variant="body2">Nenhuma transação encontrada.</Typography>
         </Box>
       )}
 
-      {/* LISTA AGRUPADA */}
       <List sx={{ overflow: 'auto', flexGrow: 1, px: 1 }}>
         {Object.entries(processedData.groups).map(([dateLabel, items]) => (
           <Box key={dateLabel} mb={1}>
-            {/* Título do Grupo (Data) */}
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              fontWeight="bold"
-              sx={{
-                display: 'block',
-                px: 2,
-                py: 1,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-                fontSize: '0.7rem'
-              }}
-            >
-              {dateLabel}
+            <Typography variant="caption" color="text.secondary" fontWeight="bold" sx={{ px: 2, py: 1, display: 'block', textTransform: 'uppercase', letterSpacing: 1, fontSize: '0.7rem' }}>
+                {dateLabel}
             </Typography>
 
-            {/* Itens do Dia */}
             {items.map((item) => {
               const style = getIconData(item.category, theme);
               const isExpense = item.type === 'expense';
 
               return (
-                <ListItem
-                  key={item.id}
-                  sx={{
-                    borderRadius: 3,
-                    mb: 1,
-                    py: 1.5,
-                    transition: 'background 0.2s',
-                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.04) }
+                <ListItem 
+                  key={item.id} 
+                  sx={{ 
+                    borderRadius: 3, mb: 1, py: 1.5,
+                    transition: 'background 0.2s', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.04) }
                   }}
+                  secondaryAction={
+                    <IconButton size="small" onClick={(e) => handleOpenMenu(e, item)}>
+                        <MoreVert fontSize="small" />
+                    </IconButton>
+                  }
                 >
                   <ListItemAvatar>
-                    <Avatar sx={{
-                      bgcolor: style.color,
-                      color: style.text,
-                      width: 40, height: 40,
-                      fontSize: '1.2rem'
-                    }}>
-                      {style.icon}
-                    </Avatar>
+                    <Avatar sx={{ bgcolor: style.color, color: style.text, width: 40, height: 40, fontSize: '1.2rem' }}>{style.icon}</Avatar>
                   </ListItemAvatar>
-
                   <ListItemText
                     primary={<Typography variant="body2" fontWeight="bold">{item.label}</Typography>}
-                    secondary={
-                      <Typography variant="caption" color="text.secondary">
-                        {item.category} • {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </Typography>
-                    }
+                    secondary={<Typography variant="caption" color="text.secondary">{item.category} • {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</Typography>}
                   />
-
-                  <Box textAlign="right">
-                    <Typography
-                      variant="body2"
-                      fontWeight="bold"
-                      sx={{ color: isExpense ? 'text.primary' : 'success.main' }}
-                    >
-                      {isExpense ? '-' : '+'} R$ {Math.abs(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  <Box textAlign="right" mr={2}>
+                    <Typography variant="body2" fontWeight="bold" sx={{ color: isExpense ? 'text.primary' : 'success.main' }}>
+                      {isExpense ? '-' : '+'} {Math.abs(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </Typography>
                   </Box>
                 </ListItem>
@@ -195,26 +197,61 @@ export default function TransactionList() {
         ))}
       </List>
 
-      {/* BOTÃO VER MAIS (FOOTER DA LISTA) */}
       {processedData.hasMore && (
         <Box p={2} pt={0}>
-          <Button
-            fullWidth
-            variant="outlined"
-            size="small"
-            onClick={handleLoadMore}
-            startIcon={<KeyboardArrowDown />}
-            sx={{
-              borderRadius: 3,
-              borderColor: theme.palette.divider,
-              color: 'text.secondary',
-              '&:hover': { borderColor: theme.palette.primary.main, color: theme.palette.primary.main }
-            }}
-          >
-            Ver mais transações
-          </Button>
+            <Button fullWidth variant="outlined" size="small" onClick={handleLoadMore} startIcon={<KeyboardArrowDown />} sx={{ borderRadius: 3, color: 'text.secondary', borderColor: theme.palette.divider }}>Ver mais</Button>
         </Box>
       )}
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+        PaperProps={{ sx: { borderRadius: 2, boxShadow: theme.shadows[3], minWidth: 150 } }}
+      >
+        <MenuItem onClick={handleEditClick}>
+            <ListItemIcon><Edit fontSize="small" /></ListItemIcon> Editar
+        </MenuItem>
+        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+            <ListItemIcon><Delete fontSize="small" color="error" /></ListItemIcon> Excluir
+        </MenuItem>
+      </Menu>
+
+      <ConfirmDialog 
+        open={openDelete}
+        onClose={() => setOpenDelete(false)}
+        onConfirm={confirmDelete}
+        title="Excluir Transação?"
+        message={`Deseja realmente apagar "${selectedTx?.label}"? O valor será removido do saldo.`}
+        confirmText="Sim, excluir"
+      />
+
+      <Dialog open={openEdit} onClose={() => setOpenEdit(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 2, p: 1 } }}>
+        <DialogTitle sx={{ pb: 1 }}>Editar Transação</DialogTitle>
+        <DialogContent>
+            <Box display="flex" flexDirection="column" gap={2} pt={1}>
+                <TextField 
+                    label="Descrição" 
+                    fullWidth 
+                    value={editForm.label} 
+                    onChange={(e) => setEditForm({...editForm, label: e.target.value})}
+                />
+                <TextField 
+                    label="Valor" 
+                    type="number"
+                    fullWidth 
+                    value={editForm.amount} 
+                    onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
+                    InputProps={{ startAdornment: <InputAdornment position="start">R$</InputAdornment> }}
+                />
+            </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setOpenEdit(false)} color="inherit">Cancelar</Button>
+            <Button onClick={saveEdit} variant="contained" sx={{ borderRadius: 2 }}>Salvar</Button>
+        </DialogActions>
+      </Dialog>
+
     </Paper>
   );
 }

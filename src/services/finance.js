@@ -41,6 +41,30 @@ export const subscribeToTransactions = (userId, callback) => {
   });
 };
 
+// ATUALIZAR Transação
+export const updateTransaction = async (transactionId, newData) => {
+  try {
+    const docRef = doc(db, "transactions", transactionId);
+    // Se tiver data, converte para Timestamp
+    const dataToUpdate = { ...newData };
+    if (dataToUpdate.date && dataToUpdate.date instanceof Date) {
+      dataToUpdate.date = Timestamp.fromDate(dataToUpdate.date);
+    }
+    await updateDoc(docRef, dataToUpdate);
+  } catch (error) {
+    console.error("Erro ao atualizar transação:", error);
+  }
+};
+
+// DELETAR Transação
+export const removeTransaction = async (transactionId) => {
+  try {
+    await deleteDoc(doc(db, "transactions", transactionId));
+  } catch (error) {
+    console.error("Erro ao deletar transação:", error);
+  }
+};
+
 // --- PLANOS RECORRENTES (AQUI ESTAVA O PROBLEMA PRINCIPAL) ---
 
 export const createRecurringPlan = async (userId, planData) => {
