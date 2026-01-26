@@ -125,15 +125,28 @@ export const FinanceProvider = ({ children }) => {
   const addRecurringPlanAction = async (planData) => {
     if (!user) return;
 
-    const installmentValue = planData.totalAmount / planData.installmentsCount;
-    const newInstallments = [];
-    
-    // Data base corrigida para meio-dia
-    const start = new Date(planData.startDate + 'T12:00:00');
+    const { amount, installmentsCount, type } = planData;
+    const isSubscription = type === 'subscription';
 
-    for (let i = 0; i < planData.installmentsCount; i++) {
-        // Usa a nova função segura de datas
-        const date = addMonthsNoOverflow(start, i);
+    // LÓGICA DE VALORES
+    // Se for assinatura: Valor da parcela é o valor inserido
+    // Se for empréstimo: Valor da parcela é Total / Parcelas
+    let installmentValue;
+    let totalCount;
+
+    if (isSubscription) {
+        installmentValue = parseFloat(amount);
+        totalCount = 60; // Gera 5 anos de assinatura (padrão de mercado pra "infinito" em NoSQL simples)
+    } else {
+        totalCount = parseInt(installmentsCount, 10) || 1;
+        installmentValue = parseFloat(amount) / totalCount;
+    }
+
+    const newInstallments = [];
+    const start = new Date(planData.startDate + 'T12:00:00'); // Fix do fuso horário
+
+    for (let i = 0; i < totalCount; i++) {
+        const date = addMonthsNoOverflow(start, i); // Usando nossa função segura de data
         
         newInstallments.push({
             number: i + 1,
@@ -145,8 +158,10 @@ export const FinanceProvider = ({ children }) => {
 
     await createRecurringPlan(user.uid, {
         title: planData.title,
-        totalDebt: parseFloat(planData.totalAmount),
+        // Se for assinatura, o "totalDebt" é simbólico, salvamos o valor mensal como referência
+        totalDebt: parseFloat(amount),
         category: planData.category,
+        type: type || 'loan', // Salva o tipo
         installments: newInstallments
     });
   };

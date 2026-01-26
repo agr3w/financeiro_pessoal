@@ -253,7 +253,7 @@ export const subscribeToSystemSettings = (callback) => {
 };
 
 // ========================================================
-// --- FUNÇÃO DE ADMIN (CORREÇÃO DO ERRO) ---
+// --- FUNÇÃO DE ADMIN ---
 // ========================================================
 
 export const checkAdminPermission = async (email) => {
