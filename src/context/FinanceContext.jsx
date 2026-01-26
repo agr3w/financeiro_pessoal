@@ -1,13 +1,10 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { 
   createTransaction, subscribeToTransactions, 
-  updateTransaction, removeTransaction, // <--- Novos Imports
   createRecurringPlan, subscribeToPlans, 
   removePlan, updatePlan,
   createCategory, subscribeToCategories, updateCategory, removeCategory,
-  // Novos imports para notificações
-  createSystemNotification, subscribeToSystemNotifications, removeSystemNotification,
-  updatesystemSettings, subscribeToSystemSettings
+  updateTransaction, removeTransaction // Importe update e remove transaction
 } from '../services/finance';
 import { useAuth } from './AuthContext';
 
@@ -20,32 +17,8 @@ export const FinanceProvider = ({ children }) => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [loanPlans, setLoanPlans] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
-  
-  // Novo estado para notificações
-  const [notifications, setNotifications] = useState([]);
-  
-  // Novo estado para configurações globais
-  const [systemSettings, setSystemSettings] = useState({ maintenanceMode: false });
 
-  // --- 0. NOTIFICAÇÕES GLOBAIS E SETTINGS ---
-  useEffect(() => {
-    // Essa inscrição não depende do user.uid, pois são globais (avisos do sistema para todos)
-    const unsubscribeNotes = subscribeToSystemNotifications((data) => {
-      setNotifications(data);
-    });
-    
-    // Nova subscrição de configurações (independente de login)
-    const unsubscribeSettings = subscribeToSystemSettings((data) => {
-      setSystemSettings(data);
-    });
-
-    return () => {
-      unsubscribeNotes();
-      unsubscribeSettings();
-    };
-  }, []); // Roda uma vez na montagem
-
-  // --- 1. CONEXÃO COM FIREBASE (DADOS DO USUÁRIO) ---
+  // --- 1. CONEXÃO COM FIREBASE ---
   useEffect(() => {
     if (!user) {
       setAllTransactions([]);
@@ -54,20 +27,9 @@ export const FinanceProvider = ({ children }) => {
       return;
     }
 
-    // Transações
-    const unsubscribeTrans = subscribeToTransactions(user.uid, (data) => {
-      setAllTransactions(data);
-    });
-
-    // Planos (Contas Fixas)
-    const unsubscribePlans = subscribeToPlans(user.uid, (data) => {
-      setLoanPlans(data);
-    });
-
-    // Categorias
-    const unsubscribeCats = subscribeToCategories(user.uid, (data) => {
-      setCustomCategories(data);
-    });
+    const unsubscribeTrans = subscribeToTransactions(user.uid, (data) => setAllTransactions(data));
+    const unsubscribePlans = subscribeToPlans(user.uid, (data) => setLoanPlans(data));
+    const unsubscribeCats = subscribeToCategories(user.uid, (data) => setCustomCategories(data));
 
     return () => {
       unsubscribeTrans();
@@ -91,18 +53,11 @@ export const FinanceProvider = ({ children }) => {
     // A. Filtra Transações
     const currentTrans = allTransactions.filter(t => isSameMonth(new Date(t.date), selectedDate));
     
-    // B. Filtra Planos (Parcelas do Mês)
+    // B. Filtra Planos
     const currentLoans = loanPlans.map(plan => {
-      // Verifica se existe parcela para este mês/ano
       const installment = plan.installments.find(inst => isSameMonth(new Date(inst.dueDate), selectedDate));
-      
       if (!installment) return null;
-
-      return {
-        ...plan, 
-        currentInstallment: installment, 
-        isPaid: installment.paid
-      };
+      return { ...plan, currentInstallment: installment, isPaid: installment.paid };
     }).filter(Boolean);
 
     // C. Totais
@@ -117,37 +72,44 @@ export const FinanceProvider = ({ children }) => {
 
   }, [selectedDate, allTransactions, loanPlans]);
 
-  // --- 3. AÇÕES DE TRANSAÇÃO ---
+  // --- 3. AÇÕES ---
   const addTransaction = async (data) => {
     if (!user) return;
     await createTransaction(user.uid, { ...data, date: data.date || selectedDate });
   };
 
-  const updateTransactionAction = async (id, data) => {
-    if (!user) return;
-    await updateTransaction(id, data);
-  };
-
-  const deleteTransactionAction = async (id) => {
-    if (!user) return;
-    await removeTransaction(id);
+  // --- CORREÇÃO DO BUG DE DATAS AQUI ---
+  const addMonthsNoOverflow = (date, months) => {
+    const newDate = new Date(date);
+    const originalDay = date.getDate();
+    
+    // Seta para o dia 1º para evitar pular mês na mudança
+    newDate.setDate(1);
+    newDate.setMonth(newDate.getMonth() + months);
+    
+    // Verifica qual é o último dia do novo mês
+    // (Mês + 1, dia 0) pega o último dia do mês atual
+    const lastDayOfNewMonth = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0).getDate();
+    
+    // Se o dia original (ex: 31) for maior que o último dia (ex: 28), usa o 28.
+    newDate.setDate(Math.min(originalDay, lastDayOfNewMonth));
+    
+    return newDate;
   };
 
   const addRecurringPlanAction = async (planData) => {
     if (!user) return;
 
-    // Gera parcelas localmente antes de enviar
     const installmentValue = planData.totalAmount / planData.installmentsCount;
     const newInstallments = [];
     
-    // IMPORTANTE: Ajuste de fuso horário pode alterar o dia
-    // Criamos a data baseada na string YYYY-MM-DD vinda do input
-    // Adicionamos 'T12:00:00' para garantir que fique no meio do dia e evite pular dia por timezone
+    // Data base corrigida para meio-dia
     const start = new Date(planData.startDate + 'T12:00:00');
 
     for (let i = 0; i < planData.installmentsCount; i++) {
-        const date = new Date(start);
-        date.setMonth(start.getMonth() + i); // Adiciona meses
+        // Usa a nova função segura de datas
+        const date = addMonthsNoOverflow(start, i);
+        
         newInstallments.push({
             number: i + 1,
             amount: installmentValue,
@@ -164,9 +126,7 @@ export const FinanceProvider = ({ children }) => {
     });
   };
 
-  const deletePlanAction = async (planId) => {
-    await removePlan(planId);
-  };
+  const deletePlanAction = async (planId) => { await removePlan(planId); };
 
   const payInstallment = async (loanId, installmentNumber) => {
     const plan = loanPlans.find(p => p.id === loanId);
@@ -189,7 +149,6 @@ export const FinanceProvider = ({ children }) => {
     });
   };
 
-  // Categorias
   const defaultCategories = [
     { id: 'Alimentação', label: 'Alimentação', iconKey: 'food', color: '#FFAB91' },
     { id: 'Transporte', label: 'Transporte', iconKey: 'transport', color: '#90CAF9' },
@@ -202,15 +161,8 @@ export const FinanceProvider = ({ children }) => {
   const addCategoryAction = async (catData) => { if(user) await createCategory(user.uid, catData); };
   const editCategoryAction = async (catId, newData) => { await updateCategory(catId, newData); };
   const removeCategoryAction = async (catId) => { await removeCategory(catId); };
-
-  // Ações de NOTIFICAÇÃO (Admin)
-  const sendNotification = async (data) => { await createSystemNotification(data); };
-  const deleteNotification = async (id) => { await removeSystemNotification(id); };
-
-  // Ações de ADMIN
-  const toggleMaintenanceMode = async () => {
-    await updatesystemSettings({ maintenanceMode: !systemSettings.maintenanceMode });
-  };
+  const editTransactionAction = async (id, data) => { await updateTransaction(id, data); };
+  const removeTransactionAction = async (id) => { await removeTransaction(id); };
 
   return (
     <FinanceContext.Provider value={{ 
@@ -221,8 +173,6 @@ export const FinanceProvider = ({ children }) => {
       income: monthIncome, 
       expense: monthExpense, 
       addTransaction, 
-      updateTransaction: updateTransactionAction,
-      deleteTransaction: deleteTransactionAction,
       payInstallment,
       addRecurringPlan: addRecurringPlanAction,
       deletePlan: deletePlanAction,
@@ -230,13 +180,8 @@ export const FinanceProvider = ({ children }) => {
       addCategory: addCategoryAction,
       editCategory: editCategoryAction,
       removeCategory: removeCategoryAction,
-      // Novos exports de notificação
-      notifications,
-      sendNotification, 
-      deleteNotification,
-      // Novos exports
-      maintenanceMode: systemSettings.maintenanceMode,
-      toggleMaintenanceMode
+      editTransaction: editTransactionAction,
+      removeTransaction: removeTransactionAction
     }}>
       {children}
     </FinanceContext.Provider>
