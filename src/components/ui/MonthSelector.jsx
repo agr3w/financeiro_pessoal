@@ -1,96 +1,58 @@
-import React, { useTransition, useState } from 'react';
-import { Box, Typography, IconButton, useTheme, CircularProgress } from '@mui/material';
-import { ArrowBackIosNew, ArrowForwardIos } from '@mui/icons-material';
-
-// Utilitário formate fora do componente para não ser recriado
-const formatMonth = (date) => {
-    return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
-};
+import React from 'react';
+import { IconButton, Typography, Box, Paper } from '@mui/material';
+import { ChevronLeft, ChevronRight, CalendarMonth } from '@mui/icons-material';
+import { useTheme } from '@mui/material/styles';
+import { capitalizeMonth } from '../../utils/format'; // Importe a função
 
 export default function MonthSelector({ currentDate, onChange }) {
-    const theme = useTheme();
+  const theme = useTheme();
 
-    const [isPending, startTransition] = useTransition();
-    const [loadingDir, setLoadingDir] = useState(null); // 'prev' | 'next' | null
+  const handlePrevMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    onChange(newDate);
+  };
 
-    const handleChangeMonth = (increment) => {
-        const direction = increment < 0 ? 'prev' : 'next';
-        setLoadingDir(direction);
+  const handleNextMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    onChange(newDate);
+  };
 
-        const newDate = new Date(currentDate);
-        newDate.setMonth(newDate.getMonth() + increment);
-
-        startTransition(() => {
-            onChange(newDate);
-        });
-    };
-
-    const getButtonStyle = (isLoading) => ({
+  return (
+    <Paper 
+      elevation={0}
+      sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        p: 1,
+        borderRadius: 4,
         bgcolor: 'background.paper',
-        color: 'text.secondary',
         border: `1px solid ${theme.palette.divider}`,
-        boxShadow: '0px 4px 12px rgba(0,0,0,0.05)',
-        width: 40,
-        height: 40,
-        transition: 'all 0.3s ease',
-        // Se estiver carregando, removemos interações de hover para não distrair
-        '&:hover': !isLoading ? {
-            color: '#fff',
-            borderColor: 'text.secondary',
-            transform: 'translateY(-2px)',
-        } : {},
-        pointerEvents: isPending ? 'none' : 'auto',
-        // Apenas diminui a opacidade se o OUTRO botão estiver sendo clicado
-        opacity: (isPending && !isLoading) ? 0.5 : 1
-    });
+        maxWidth: 300,
+        mx: 'auto'
+      }}
+    >
+      <IconButton onClick={handlePrevMonth} size="small">
+        <ChevronLeft />
+      </IconButton>
 
-    return (
-        <Box display="flex" alignItems="center" justifyContent="center" gap={3} sx={{ mb: 4 }}>
-
-            <IconButton
-                onClick={() => handleChangeMonth(-1)}
-                size="small"
-                sx={getButtonStyle(isPending && loadingDir === 'prev')}
-                disabled={isPending}
-            >
-                {/* Lógica: Mostra Spinner OU Seta */}
-                {isPending && loadingDir === 'prev' ? (
-                    <CircularProgress size={20} sx={{ color: 'text.secondary' }} />
-                ) : (
-                    <ArrowBackIosNew fontSize="small" />
-                )}
-            </IconButton>
-
-            <Typography
-                variant="h4"
-                fontFamily="serif"
-                sx={{
-                    textTransform: 'capitalize',
-                    minWidth: 220,
-                    textAlign: 'center',
-                    fontWeight: 700,
-                    color: 'text.primary',
-                    letterSpacing: '-0.5px',
-                    opacity: isPending ? 0.5 : 1,
-                    transition: 'opacity 0.2s'
-                }}
-            >
-                {formatMonth(currentDate)}
+      <Box display="flex" alignItems="center" gap={1}>
+        <CalendarMonth fontSize="small" color="action" sx={{ opacity: 0.7 }} />
+        <Box textAlign="center">
+            <Typography variant="h6" fontFamily="serif" lineHeight={1}>
+              {capitalizeMonth(currentDate)}
             </Typography>
-
-            <IconButton
-                onClick={() => handleChangeMonth(1)}
-                size="small"
-                sx={getButtonStyle(isPending && loadingDir === 'next')}
-                disabled={isPending}
-            >
-                {/* Lógica: Mostra Spinner OU Seta */}
-                {isPending && loadingDir === 'next' ? (
-                    <CircularProgress size={20} sx={{ color: 'text.secondary' }} />
-                ) : (
-                    <ArrowForwardIos fontSize="small" />
-                )}
-            </IconButton>
+            <Typography variant="caption" color="text.secondary" display="block" fontSize="0.65rem" fontWeight="bold">
+                {currentDate.getFullYear()}
+            </Typography>
         </Box>
-    );
+      </Box>
+
+      <IconButton onClick={handleNextMonth} size="small">
+        <ChevronRight />
+      </IconButton>
+    </Paper>
+  );
 }

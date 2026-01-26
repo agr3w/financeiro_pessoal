@@ -8,6 +8,7 @@ import { Tune, Visibility, Percent, AttachMoney } from '@mui/icons-material';
 import { FinanceContext } from '../../context/FinanceContext';
 import { useThemeContext } from '../../context/ThemeContext';
 import { useTheme } from '@mui/material/styles';
+import { formatCurrency } from '../../utils/format'; // Importe
 
 export default function DashboardStats() {
   const { balance, income, expense, transactions } = useContext(FinanceContext);
@@ -22,9 +23,10 @@ export default function DashboardStats() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Substitua a função antiga formatValue por esta:
   const formatValue = (value, isCurrency = true) => {
     if (dashboardPrefs.privacyMode) return '••••';
-    if (isCurrency) return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    if (isCurrency) return formatCurrency(value); // Usa nosso formatador global
     return value;
   };
 
@@ -143,11 +145,11 @@ export default function DashboardStats() {
                 <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
                 <Typography variant="body2" color="text.secondary">Livre</Typography>
                 <Typography variant="h5" fontWeight="bold" color="primary">
-                    {dashboardPrefs.privacyMode ? '---' : (
-                        dashboardPrefs.showAvailabilityAsPercentage 
-                        ? `${income > 0 ? Math.round((balance / income) * 100) : 0}%`
-                        : `R$ ${balance.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                    )}
+                  {dashboardPrefs.privacyMode ? '---' : (
+                    dashboardPrefs.showAvailabilityAsPercentage 
+                    ? `${Math.round((balance / (income || 1)) * 100)}%`
+                    : formatCurrency(balance) // <--- Use aqui também
+                  )}
                 </Typography>
                 </Box>
             </Box>
