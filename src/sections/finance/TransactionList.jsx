@@ -10,20 +10,20 @@ import {
 } from '@mui/icons-material';
 import { FinanceContext } from '../../context/FinanceContext';
 import { useTheme, alpha } from '@mui/material/styles';
-import ConfirmDialog from '../../components/ui/ConfirmDialog'; // <--- Importe o novo componente
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
-// Helpers (mantenha os mesmos do arquivo anterior)
+// Helpers
 const getIconData = (category, theme) => {
   const map = {
-    'Alimentação': { icon: <Fastfood />, color: theme.palette.custom.orange, text: theme.palette.custom.orangeText },
-    'Transporte': { icon: <LocalGasStation />, color: theme.palette.custom.blue, text: theme.palette.custom.blueText },
-    'Compras': { icon: <ShoppingBag />, color: theme.palette.custom.purple, text: theme.palette.custom.purpleText },
-    'Contas': { icon: <Bolt />, color: theme.palette.custom.pink, text: theme.palette.custom.pinkText },
+    'Alimentação': { icon: <Fastfood />, color: theme.palette.custom?.orange || '#F97316', text: theme.palette.custom?.orangeText || '#C2410C' },
+    'Transporte': { icon: <LocalGasStation />, color: theme.palette.custom?.blue || '#3B82F6', text: theme.palette.custom?.blueText || '#1D4ED8' },
+    'Compras': { icon: <ShoppingBag />, color: theme.palette.custom?.purple || '#A855F7', text: theme.palette.custom?.purpleText || '#7E22CE' },
+    'Contas': { icon: <Bolt />, color: theme.palette.custom?.pink || '#EC4899', text: theme.palette.custom?.pinkText || '#BE185D' },
   };
   return map[category] || {
     icon: <Star />,
-    color: theme.palette.custom.green,
-    text: theme.palette.custom.greenText
+    color: theme.palette.custom?.green || '#10B981',
+    text: theme.palette.custom?.greenText || '#047857'
   };
 };
 
@@ -43,11 +43,23 @@ const getDateLabel = (dateObj) => {
   return dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
 };
 
+// Helper para traduzir método de pagamento
+const getPaymentLabel = (method) => {
+    const map = {
+        'credit': 'Crédito',
+        'debit': 'Débito',
+        'pix': 'Pix',
+        'cash': 'Dinheiro',
+        'voucher': 'Vale'
+    };
+    return map[method] || null;
+};
+
 export default function TransactionList() {
   const { 
     transactions, 
-    removeTransaction: deleteTransaction, // Alias: pega removeTransaction e chama de deleteTransaction
-    editTransaction: updateTransaction    // Alias: pega editTransaction e chama de updateTransaction
+    removeTransaction: deleteTransaction, 
+    editTransaction: updateTransaction
   } = useContext(FinanceContext); 
   
   const theme = useTheme();
@@ -58,7 +70,7 @@ export default function TransactionList() {
   
   // Estados para Menu e Ações
   const [anchorEl, setAnchorEl] = useState(null);
-  const [selectedTx, setSelectedTx] = useState(null); // Transação selecionada para ação
+  const [selectedTx, setSelectedTx] = useState(null); 
   
   // Modais
   const [openDelete, setOpenDelete] = useState(false);
@@ -68,7 +80,6 @@ export default function TransactionList() {
   const [editForm, setEditForm] = useState({ label: '', amount: '' });
 
   // --- HANDLERS ---
-
   const handleOpenMenu = (event, transaction) => {
     setAnchorEl(event.currentTarget);
     setSelectedTx(transaction);
@@ -78,7 +89,6 @@ export default function TransactionList() {
     setAnchorEl(null);
   };
 
-  // --- DELETE FLOW ---
   const handleDeleteClick = () => {
     handleCloseMenu();
     setOpenDelete(true);
@@ -86,19 +96,17 @@ export default function TransactionList() {
 
   const confirmDelete = async () => {
     if (selectedTx) {
-      // CORREÇÃO: Chamando deleteTransaction em vez de removeTransaction
       await deleteTransaction(selectedTx.id);
       setOpenDelete(false);
       setSelectedTx(null);
     }
   };
 
-  // --- EDIT FLOW ---
   const handleEditClick = () => {
     handleCloseMenu();
     setEditForm({ 
         label: selectedTx.label, 
-        amount: String(Math.abs(selectedTx.amount)) // valor como string
+        amount: String(Math.abs(selectedTx.amount)) 
     });
     setOpenEdit(true);
   };
@@ -109,7 +117,6 @@ export default function TransactionList() {
     const originalSignal = selectedTx.amount < 0 ? -1 : 1;
     const newAmount = parseFloat(editForm.amount) * originalSignal;
 
-    // CORREÇÃO: Chamando updateTransaction em vez de editTransaction
     await updateTransaction(selectedTx.id, {
         label: editForm.label,
         amount: newAmount
@@ -168,6 +175,7 @@ export default function TransactionList() {
             {items.map((item) => {
               const style = getIconData(item.category, theme);
               const isExpense = item.type === 'expense';
+              const paymentLabel = getPaymentLabel(item.paymentMethod);
 
               return (
                 <ListItem 
@@ -185,10 +193,43 @@ export default function TransactionList() {
                   <ListItemAvatar>
                     <Avatar sx={{ bgcolor: style.color, color: style.text, width: 40, height: 40, fontSize: '1.2rem' }}>{style.icon}</Avatar>
                   </ListItemAvatar>
+                  
                   <ListItemText
                     primary={<Typography variant="body2" fontWeight="bold">{item.label}</Typography>}
-                    secondary={<Typography variant="caption" color="text.secondary">{item.category} • {new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</Typography>}
+                    // CORREÇÃO: Define o componente wrapper como 'div' para permitir Box/Div filhos
+                    secondaryTypographyProps={{ component: 'div' }} 
+                    secondary={
+                        <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                            <Typography variant="caption" color="text.secondary">
+                                {item.category}
+                            </Typography>
+                            
+                            {/* MOSTRAR PAGAMENTO SE EXISTIR */}
+                            {paymentLabel && (
+                                <>
+                                    <Typography variant="caption" color="text.disabled">•</Typography>
+                                    <Box 
+                                        sx={{ 
+                                            bgcolor: alpha(theme.palette.text.primary, 0.05), 
+                                            px: 0.8, py: 0.2, borderRadius: 1,
+                                            display: 'inline-flex'
+                                        }}
+                                    >
+                                        <Typography variant="caption" fontWeight="bold" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                            {paymentLabel.toUpperCase()}
+                                        </Typography>
+                                    </Box>
+                                </>
+                            )}
+                            
+                            <Typography variant="caption" color="text.disabled">•</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {new Date(item.date).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                            </Typography>
+                        </Box>
+                    }
                   />
+                  
                   <Box textAlign="right" mr={2}>
                     <Typography variant="body2" fontWeight="bold" sx={{ color: isExpense ? 'text.primary' : 'success.main' }}>
                       {isExpense ? '-' : '+'} {Math.abs(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}

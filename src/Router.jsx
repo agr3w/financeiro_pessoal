@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Loading from "./components/ui/Loading";
+import ErrorBoundary from "./components/ui/ErrorBoundary"; // Importe aqui
 
 // --- LAZY IMPORTS (Carregamento Dinâmico) ---
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -19,30 +20,32 @@ const PrivateRoute = ({ children }) => {
 
 export default function Router() {
   return (
-    // Suspense envolve TODAS as rotas para mostrar o Loading enquanto o arquivo baixa
-    <Suspense fallback={<Loading message="Organizando suas finanças..." />}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
+    // Adicione o ErrorBoundary envolvendo o Suspense
+    <ErrorBoundary>
+        <Suspense fallback={<Loading message="Organizando suas finanças..." />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
 
-        <Route path="/" element={
-          <PrivateRoute><Dashboard /></PrivateRoute>
-        } />
+            <Route path="/" element={
+              <PrivateRoute><Dashboard /></PrivateRoute>
+            } />
 
-        <Route path="/settings" element={
-          <PrivateRoute><Settings /></PrivateRoute>
-        } />
+            <Route path="/settings" element={
+              <PrivateRoute><Settings /></PrivateRoute>
+            } />
 
-        <Route path="/categories" element={
-          <PrivateRoute><Categories /></PrivateRoute>
-        } />
+            <Route path="/categories" element={
+              <PrivateRoute><Categories /></PrivateRoute>
+            } />
 
-        <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<NotFound />} />
 
-        <Route path="/admin" element={
-          <PrivateRoute><AdminPanel /></PrivateRoute>
-        } />
+            <Route path="/admin" element={
+              <PrivateRoute><AdminPanel /></PrivateRoute>
+            } />
 
-      </Routes>
-    </Suspense>
+          </Routes>
+        </Suspense>
+    </ErrorBoundary>
   );
 }
