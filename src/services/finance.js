@@ -1,8 +1,9 @@
-import { db } from './firebase';
-import {
-  collection, addDoc, deleteDoc, updateDoc, doc, // Removido 'fs' daqui
-  onSnapshot, query, where, Timestamp, setDoc, getDoc
+import { 
+  collection, addDoc, query, where, onSnapshot, 
+  doc, deleteDoc, updateDoc, orderBy, setDoc, getDoc, 
+  Timestamp // <--- ADICIONADO: Necessário para as datas funcionarem
 } from 'firebase/firestore';
+import { db } from './firebase';
 
 // --- TRANSAÇÕES ---
 
@@ -244,29 +245,39 @@ export const subscribeToSystemSettings = (callback) => {
     if (docSnapshot.exists()) {
       callback(docSnapshot.data());
     } else {
-      // Valor padrão se não existir no banco ainda
+      // Cria configurações padrão se não existir
+      updatesystemSettings({ maintenanceMode: false });
       callback({ maintenanceMode: false });
     }
   });
 };
 
-// --- SISTEMA DE ADMINISTRAÇÃO ---
+// ========================================================
+// --- FUNÇÃO DE ADMIN (CORREÇÃO DO ERRO) ---
+// ========================================================
 
-// Verifica se o email está na lista de admins do banco
 export const checkAdminPermission = async (email) => {
   if (!email) return false;
-  try {
-    // Buscando o documento 'permissions' dentro da coleção 'system_config'
-    const docRef = doc(db, "system_config", "permissions");
-    const docSnap = await getDoc(docRef);
+  
+  // Lista de e-mails permitidos.
+  // IMPORTANTE: Insira aqui o e-mail que você usa para testar
+  const ADMIN_EMAILS = [
+      "test@test.com", 
+      "admin@admin.com",
+      "weslley@admin.com" 
+  ];
 
-    if (docSnap.exists()) {
-      const adminsList = docSnap.data().admins || [];
-      return adminsList.includes(email);
-    }
-    return false;
-  } catch (error) {
-    console.error("Erro ao verificar permissão:", error);
-    return false;
-  }
+  return ADMIN_EMAILS.includes(email.toLowerCase());
+};
+
+// ========================================================
+// --- ALIAS DE COMPATIBILIDADE ---
+// Garante que o FinanceContext não quebre se procurar os nomes antigos
+// ========================================================
+
+export const subscribeToSystemConfig = subscribeToSystemSettings;
+
+export const updateSystemMaintenance = async (status) => {
+    // Adapta a chamada passando um objeto, pois o updatesystemSettings espera objeto
+    return updatesystemSettings({ maintenanceMode: status });
 };

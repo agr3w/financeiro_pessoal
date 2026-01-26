@@ -44,8 +44,12 @@ const getDateLabel = (dateObj) => {
 };
 
 export default function TransactionList() {
-  // CORREÇÃO: Usando os nomes corretos exportados pelo FinanceContext (deleteTransaction e updateTransaction)
-  const { transactions, deleteTransaction, updateTransaction } = useContext(FinanceContext); 
+  const { 
+    transactions, 
+    removeTransaction: deleteTransaction, // Alias: pega removeTransaction e chama de deleteTransaction
+    editTransaction: updateTransaction    // Alias: pega editTransaction e chama de updateTransaction
+  } = useContext(FinanceContext); 
+  
   const theme = useTheme();
 
   // Estados

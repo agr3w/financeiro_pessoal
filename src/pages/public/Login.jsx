@@ -17,18 +17,19 @@ export default function Login() {
     const navigate = useNavigate();
 
     // EMAIL DO ADMIN (Deve ser o mesmo do AdminPanel)
-    const ADMIN_EMAIL = "test@test.com";
+    const ADMIN_EMAIL = "test@test.com"; // ou weslley@admin.com, etc.
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         
-        // --- LÓGICA DE BLOQUEIO ---
-        if (maintenanceMode && email !== ADMIN_EMAIL) {
-            setError('MANUTENÇÃO: Apenas administradores podem entrar no momento.');
-            return;
+        // --- LÓGICA DE BLOQUEIO AJUSTADA ---
+        // Se estiver em manutenção E o e-mail digitado NÃO for o do admin
+        if (maintenanceMode && email.trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+            setError('SISTEMA EM MANUTENÇÃO: Apenas administradores podem acessar.');
+            return; // Interrompe o login aqui, nem chama o Firebase Auth
         }
-        // --------------------------
+        // -----------------------------------
 
         setLoading(true);
 
@@ -36,9 +37,9 @@ export default function Login() {
             if (isLogin) {
                 await login(email, password);
             } else {
-                // Também bloqueia criação de conta em manutenção
+                // Também bloqueia criação de conta em manutenção (redundância de segurança)
                 if (maintenanceMode) {
-                     throw new Error("Novos registros estão desabilitados durante a manutenção.");
+                     throw new Error("O registro de novos usuários está suspenso durante a manutenção.");
                 }
                 await signup(email, password);
             }

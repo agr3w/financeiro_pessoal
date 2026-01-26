@@ -4,7 +4,10 @@ import {
   createRecurringPlan, subscribeToPlans, 
   removePlan, updatePlan,
   createCategory, subscribeToCategories, updateCategory, removeCategory,
-  updateTransaction, removeTransaction // Importe update e remove transaction
+  updateTransaction, removeTransaction,
+  // IMPORTAR AS NOVAS FUNÇÕES
+  subscribeToSystemConfig, updateSystemMaintenance,
+  subscribeToSystemNotifications, createSystemNotification, removeSystemNotification
 } from '../services/finance';
 import { useAuth } from './AuthContext';
 
@@ -17,6 +20,28 @@ export const FinanceProvider = ({ children }) => {
   const [allTransactions, setAllTransactions] = useState([]);
   const [loanPlans, setLoanPlans] = useState([]);
   const [customCategories, setCustomCategories] = useState([]);
+
+  // --- NOVOS ESTADOS GLOBAIS ---
+  const [appsStatus, setAppsStatus] = useState({ maintenanceMode: false });
+  const [notifications, setNotifications] = useState([]);
+
+  // --- ESCUTAR CONFIGURAÇÕES GLOBAIS (Roda independente do usuário estar logado) ---
+  useEffect(() => {
+    // Escutar status de manutenção
+    const unsubConfig = subscribeToSystemConfig((data) => {
+        setAppsStatus(data);
+    });
+
+    // Escutar notificações públicas
+    const unsubNotes = subscribeToSystemNotifications((data) => {
+        setNotifications(data);
+    });
+
+    return () => {
+        unsubConfig();
+        unsubNotes();
+    };
+  }, []); // Array vazio: executa ao abrir o app
 
   // --- 1. CONEXÃO COM FIREBASE ---
   useEffect(() => {
@@ -164,6 +189,15 @@ export const FinanceProvider = ({ children }) => {
   const editTransactionAction = async (id, data) => { await updateTransaction(id, data); };
   const removeTransactionAction = async (id) => { await removeTransaction(id); };
 
+  // --- FUNÇÕES DE ADMIN ---
+  const toggleMaintenanceMode = async () => {
+    const newStatus = !appsStatus.maintenanceMode;
+    await updateSystemMaintenance(newStatus);
+  };
+
+  const sendNotification = async (data) => await createSystemNotification(data);
+  const deleteNotification = async (id) => await removeSystemNotification(id);
+
   return (
     <FinanceContext.Provider value={{ 
       selectedDate, setSelectedDate,
@@ -181,7 +215,14 @@ export const FinanceProvider = ({ children }) => {
       editCategory: editCategoryAction,
       removeCategory: removeCategoryAction,
       editTransaction: editTransactionAction,
-      removeTransaction: removeTransactionAction
+      removeTransaction: removeTransactionAction,
+
+      // EXPORTAR NOVOS VALORES E FUNÇÕES
+      maintenanceMode: appsStatus.maintenanceMode,
+      toggleMaintenanceMode,
+      notifications,
+      sendNotification,
+      deleteNotification
     }}>
       {children}
     </FinanceContext.Provider>

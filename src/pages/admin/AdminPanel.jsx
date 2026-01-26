@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import {
     Container, Grid, Paper, Typography, Box, TextField,
     Button, MenuItem, IconButton, List, ListItem, ListItemText, Chip, 
-    Divider, Switch, FormControlLabel
+    Divider, Switch, FormControlLabel, 
 } from '@mui/material';
 import { Delete, Send, Info, Warning, NewReleases, Group, Public, Lock, LockOpen } from '@mui/icons-material';
 import Header from '../../components/layout/Header';
@@ -13,7 +13,8 @@ import { Navigate } from 'react-router-dom';
 export default function AdminPanel() {
     const { user, isAdmin } = useAuth(); // <--- Pegando isAdmin do contexto
     const { 
-        notifications, sendNotification, deleteNotification,
+        notifications = [], // ADICIONADO: Valor padrão para evitar erro de undefined
+        sendNotification, deleteNotification,
         maintenanceMode, toggleMaintenanceMode
     } = useContext(FinanceContext);
 
