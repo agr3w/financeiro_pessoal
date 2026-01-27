@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, IconButton, Divider, Stack } from "@mui/material";
-import { GitHub, LinkedIn, Code, Instagram } from "@mui/icons-material";
+import { LinkedIn, Code, Instagram } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 
 export default function Footer() {
@@ -10,9 +10,9 @@ export default function Footer() {
   // Links do Weslley (Troque pelos seus reais!)
   const socialLinks = [
     {
-      icon: <GitHub fontSize="small" />,
-      url: "https://github.com/agr3w",
-      label: "GitHub",
+      icon: <Code fontSize="small" />,
+      url: "https://weslleykampa.netlify.app/",
+      label: "Site do Weslley",
     }, // Puxei do seu user
     {
       icon: <LinkedIn fontSize="small" />,
