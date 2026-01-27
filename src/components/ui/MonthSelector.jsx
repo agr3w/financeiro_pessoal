@@ -1,8 +1,8 @@
-import React from 'react';
-import { IconButton, Typography, Box, Paper } from '@mui/material';
-import { ChevronLeft, ChevronRight, CalendarMonth } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import { capitalizeMonth } from '../../utils/format'; // Importe a função
+import React from "react";
+import { IconButton, Typography, Box, Paper } from "@mui/material";
+import { ChevronLeft, ChevronRight, CalendarMonth } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
+import { capitalizeMonth } from "../../utils/format"; // Importe a função
 
 export default function MonthSelector({ currentDate, onChange }) {
   const theme = useTheme();
@@ -20,18 +20,18 @@ export default function MonthSelector({ currentDate, onChange }) {
   };
 
   return (
-    <Paper 
+    <Paper
       elevation={0}
-      sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
         p: 1,
         borderRadius: 4,
-        bgcolor: 'background.paper',
+        bgcolor: "background.paper",
         border: `1px solid ${theme.palette.divider}`,
         maxWidth: 300,
-        mx: 'auto'
+        mx: "auto",
       }}
     >
       <IconButton onClick={handlePrevMonth} size="small">
@@ -41,12 +41,18 @@ export default function MonthSelector({ currentDate, onChange }) {
       <Box display="flex" alignItems="center" gap={1}>
         <CalendarMonth fontSize="small" color="action" sx={{ opacity: 0.7 }} />
         <Box textAlign="center">
-            <Typography variant="h6" fontFamily="serif" lineHeight={1}>
-              {capitalizeMonth(currentDate)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" fontSize="0.65rem" fontWeight="bold">
-                {currentDate.getFullYear()}
-            </Typography>
+          <Typography variant="h6" fontFamily="serif" lineHeight={1}>
+            {capitalizeMonth(currentDate)}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            fontSize="0.65rem"
+            fontWeight="bold"
+          >
+            {currentDate.getFullYear()}
+          </Typography>
         </Box>
       </Box>
 

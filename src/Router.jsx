@@ -22,30 +22,49 @@ export default function Router() {
   return (
     // Adicione o ErrorBoundary envolvendo o Suspense
     <ErrorBoundary>
-        <Suspense fallback={<Loading message="Organizando suas finanças..." />}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
+      <Suspense fallback={<Loading message="Organizando suas finanças..." />}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
 
-            <Route path="/" element={
-              <PrivateRoute><Dashboard /></PrivateRoute>
-            } />
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
 
-            <Route path="/settings" element={
-              <PrivateRoute><Settings /></PrivateRoute>
-            } />
+          <Route
+            path="/settings"
+            element={
+              <PrivateRoute>
+                <Settings />
+              </PrivateRoute>
+            }
+          />
 
-            <Route path="/categories" element={
-              <PrivateRoute><Categories /></PrivateRoute>
-            } />
+          <Route
+            path="/categories"
+            element={
+              <PrivateRoute>
+                <Categories />
+              </PrivateRoute>
+            }
+          />
 
-            <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} />
 
-            <Route path="/admin" element={
-              <PrivateRoute><AdminPanel /></PrivateRoute>
-            } />
-
-          </Routes>
-        </Suspense>
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <AdminPanel />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

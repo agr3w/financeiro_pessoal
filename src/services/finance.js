@@ -1,9 +1,16 @@
-import { 
-  collection, addDoc, query, where, onSnapshot, 
-  doc, deleteDoc, updateDoc, orderBy, setDoc, getDoc, 
-  Timestamp // <--- ADICIONADO: Necessário para as datas funcionarem
-} from 'firebase/firestore';
-import { db } from './firebase';
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  deleteDoc,
+  updateDoc,
+  setDoc,
+  Timestamp,
+} from "firebase/firestore";
+import { db } from "./firebase";
 
 // --- TRANSAÇÕES ---
 
@@ -13,7 +20,7 @@ export const createTransaction = async (userId, data) => {
       ...data,
       userId,
       date: Timestamp.fromDate(new Date(data.date)),
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     });
   } catch (error) {
     console.error("Erro ao criar transação:", error);
@@ -24,14 +31,14 @@ export const subscribeToTransactions = (userId, callback) => {
   // REMOVIDO: orderBy("date", "desc") para evitar erro de índice
   const q = query(
     collection(db, "transactions"),
-    where("userId", "==", userId)
+    where("userId", "==", userId),
   );
 
   return onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-      date: doc.data().date ? doc.data().date.toDate() : new Date()
+      date: doc.data().date ? doc.data().date.toDate() : new Date(),
     }));
 
     // ORDENAÇÃO NO CLIENTE (Mais seguro para projetos iniciais)
@@ -71,16 +78,16 @@ export const removeTransaction = async (transactionId) => {
 export const createRecurringPlan = async (userId, planData) => {
   try {
     // Sanitizar as datas das parcelas para Timestamp do Firestore
-    const sanitizedInstallments = planData.installments.map(inst => ({
+    const sanitizedInstallments = planData.installments.map((inst) => ({
       ...inst,
-      dueDate: Timestamp.fromDate(new Date(inst.dueDate))
+      dueDate: Timestamp.fromDate(new Date(inst.dueDate)),
     }));
 
     await addDoc(collection(db, "recurring_plans"), {
       ...planData,
       userId,
       installments: sanitizedInstallments,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     });
     console.log("Plano criado com sucesso no banco!");
   } catch (error) {
@@ -92,38 +99,49 @@ export const subscribeToPlans = (userId, callback) => {
   // REMOVIDO: orderBy("createdAt", "desc")
   const q = query(
     collection(db, "recurring_plans"),
-    where("userId", "==", userId)
+    where("userId", "==", userId),
   );
 
-  return onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map(doc => {
-      const raw = doc.data();
-      return {
-        id: doc.id,
-        ...raw,
-        // Converte datas das parcelas de volta para JS Date
-        installments: raw.installments ? raw.installments.map(inst => ({
-          ...inst,
-          dueDate: inst.dueDate.toDate()
-        })) : []
-      };
-    });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const data = snapshot.docs.map((doc) => {
+        const raw = doc.data();
+        return {
+          id: doc.id,
+          ...raw,
+          // Converte datas das parcelas de volta para JS Date
+          installments: raw.installments
+            ? raw.installments.map((inst) => ({
+                ...inst,
+                dueDate: inst.dueDate.toDate(),
+              }))
+            : [],
+        };
+      });
 
-    // Ordena por data de criação (se existir)
-    data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      // Ordena por data de criação (se existir)
+      data.sort(
+        (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),
+      );
 
-    callback(data);
-  }, (error) => {
-    console.error("Erro ao buscar planos:", error); // Log de erro no console
-  });
+      callback(data);
+    },
+    (error) => {
+      console.error("Erro ao buscar planos:", error); // Log de erro no console
+    },
+  );
 };
 
 export const updatePlan = async (planId, newData) => {
   try {
     if (newData.installments) {
-      newData.installments = newData.installments.map(inst => ({
+      newData.installments = newData.installments.map((inst) => ({
         ...inst,
-        dueDate: inst.dueDate instanceof Date ? Timestamp.fromDate(inst.dueDate) : inst.dueDate
+        dueDate:
+          inst.dueDate instanceof Date
+            ? Timestamp.fromDate(inst.dueDate)
+            : inst.dueDate,
       }));
     }
     const docRef = doc(db, "recurring_plans", planId);
@@ -148,7 +166,7 @@ export const createCategory = async (userId, categoryData) => {
     await addDoc(collection(db, "categories"), {
       ...categoryData,
       userId,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     });
   } catch (error) {
     console.error("Erro ao criar categoria:", error);
@@ -158,7 +176,7 @@ export const createCategory = async (userId, categoryData) => {
 export const subscribeToCategories = (userId, callback) => {
   const q = query(collection(db, "categories"), where("userId", "==", userId));
   return onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     // Ordena alfabeticamente
     data.sort((a, b) => a.label.localeCompare(b.label));
     callback(data);
@@ -189,7 +207,7 @@ export const createSystemNotification = async (data) => {
   try {
     await addDoc(collection(db, "system_notifications"), {
       ...data,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     });
   } catch (error) {
     console.error("Erro ao criar notificação:", error);
@@ -200,15 +218,17 @@ export const createSystemNotification = async (data) => {
 export const subscribeToSystemNotifications = (callback) => {
   // Pega todas, ordenadas por data
   const q = query(
-    collection(db, "system_notifications")
+    collection(db, "system_notifications"),
     // Sem 'orderBy' no banco para evitar aquele erro de índice, ordenamos no front
   );
 
   return onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-      createdAt: doc.data().createdAt ? doc.data().createdAt.toDate() : new Date()
+      createdAt: doc.data().createdAt
+        ? doc.data().createdAt.toDate()
+        : new Date(),
     }));
 
     // Ordena: Mais recentes primeiro
@@ -233,7 +253,9 @@ export const removeSystemNotification = async (id) => {
 export const updatesystemSettings = async (settings) => {
   try {
     // Usamos setDoc com merge para criar se não existir ou atualizar
-    await setDoc(doc(db, "system_settings", "general"), settings, { merge: true });
+    await setDoc(doc(db, "system_settings", "general"), settings, {
+      merge: true,
+    });
   } catch (error) {
     console.error("Erro ao atualizar configurações:", error);
   }
@@ -258,13 +280,13 @@ export const subscribeToSystemSettings = (callback) => {
 
 export const checkAdminPermission = async (email) => {
   if (!email) return false;
-  
+
   // Lista de e-mails permitidos.
   // IMPORTANTE: Insira aqui o e-mail que você usa para testar
   const ADMIN_EMAILS = [
-      "test@test.com", 
-      "admin@admin.com",
-      "weslley@admin.com" 
+    "test@test.com",
+    "admin@admin.com",
+    "weslley@admin.com",
   ];
 
   return ADMIN_EMAILS.includes(email.toLowerCase());
@@ -278,6 +300,6 @@ export const checkAdminPermission = async (email) => {
 export const subscribeToSystemConfig = subscribeToSystemSettings;
 
 export const updateSystemMaintenance = async (status) => {
-    // Adapta a chamada passando um objeto, pois o updatesystemSettings espera objeto
-    return updatesystemSettings({ maintenanceMode: status });
+  // Adapta a chamada passando um objeto, pois o updatesystemSettings espera objeto
+  return updatesystemSettings({ maintenanceMode: status });
 };
