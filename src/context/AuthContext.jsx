@@ -8,9 +8,10 @@ import {
   deleteUser,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  sendPasswordResetEmail,
 } from "firebase/auth";
-import { auth } from "../services/firebase";
-import { checkAdminPermission } from "../services/finance"; // <--- Importe a função
+import { auth } from "../services/firebase"; 
+import { checkAdminPermission } from "../services/finance";
 
 const AuthContext = createContext();
 
@@ -18,7 +19,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false); // <--- Novo Estado
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const signup = (email, password) => {
@@ -36,6 +37,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   // --- FUNÇÕES DE SEGURANÇA ---
+
+  // Recuperação de Senha
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email);
+  };
 
   // Alterar Senha
   const updateUserPassword = async (currentPassword, newPassword) => {
@@ -73,8 +79,7 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
 
       if (currentUser) {
-        // Verifica no banco (ou lista hardcoded) se é admin
-        // Essa chamada é assíncrona, por isso o async/await dentro do callback
+        // 1. Verifica no banco se é admin
         const adminStatus = await checkAdminPermission(currentUser.email);
         setIsAdmin(adminStatus);
       } else {
@@ -89,10 +94,11 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    isAdmin, // <--- Exporta para o resto do app usar
+    isAdmin,
     signup,
     login,
     logout,
+    resetPassword, // <--- Exportado
     updateUserPassword,
     deleteUserAccount,
   };
