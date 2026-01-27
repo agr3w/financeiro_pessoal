@@ -8,6 +8,7 @@ import TransactionList from "../../sections/finance/TransactionList";
 import QuickAddFab from "../../sections/finance/QuickAddFab";
 import AddPlanModal from "../../components/organisms/AddPlanModal";
 import { FinanceContext } from "../../context/FinanceContext";
+import PaymentMethodsSummary from "../../sections/finance/PaymentMethodsSummary";
 
 export default function Dashboard() {
   const { loans, payInstallment, selectedDate, setSelectedDate } =
@@ -35,6 +36,8 @@ export default function Dashboard() {
             onChange={(newDate) => setSelectedDate(newDate)}
           />
         </Box>
+
+        <PaymentMethodsSummary />
 
         {/* Resumo */}
         <Box mb={4}>

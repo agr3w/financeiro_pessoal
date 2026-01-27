@@ -191,12 +191,12 @@ export default function QuickAddFab() {
               sx={{ '& input': { textAlign: 'center' }, py: 1 }}
             />
 
-            {/* 3. Categorias (Grid Scrollável se precisar) */}
+            {/* 3. Categorias */}
             <Box>
               <Typography variant="caption" align="center" display="block" color="text.secondary" mb={2} fontWeight={600} letterSpacing={1}>
                 SELECIONE A CATEGORIA
               </Typography>
-              <Grid container spacing={2} justifyContent="center" sx={{ maxHeight: 280, overflowY: 'auto', px: 1 }}>
+              <Grid container spacing={2} justifyContent="center" sx={{ maxHeight: 280, overflowY: 'auto', px: 1, '&::-webkit-scrollbar': { width: '6px' } }} >
                 {displayCategories.map((cat) => {
                   const isSelected = category === cat.label;
                   const catColor = cat.color || theme.palette.custom.blue;
