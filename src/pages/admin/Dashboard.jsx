@@ -22,6 +22,8 @@ export default function Dashboard() {
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.default",
+        pb: 10,
+        pt: 4,
       }}
     >
       {/* Conteúdo Expansível (flexGrow: 1) */}

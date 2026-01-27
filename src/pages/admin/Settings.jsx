@@ -148,6 +148,8 @@ export default function Settings() {
         bgcolor: "background.default",
         display: "flex",
         flexDirection: "column",
+        pt: 4,
+        pb: 8,
       }}
     >
       <Container maxWidth="md" sx={{ flexGrow: 1 }}>

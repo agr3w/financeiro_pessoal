@@ -128,7 +128,7 @@ export default function Categories() {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 10 }}>
+    <Box sx={{ minHeight: "70vh", bgcolor: "background.default", pb: 10, pt: 4,  }}>
       <Container maxWidth="md">
         <Grid container spacing={2}>
           {categories.map((cat) => {

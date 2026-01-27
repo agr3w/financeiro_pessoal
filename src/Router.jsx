@@ -1,10 +1,8 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { FinanceProvider } from "./context/FinanceContext";
-import { CustomThemeProvider } from "./context/ThemeContext";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import Loading from "./components/ui/Loading";
-import AppLayout from "./components/layout/AppLayout"; // <--- Importe o Layout
+import AppLayout from "./components/layout/AppLayout";
 
 // Lazy loading das páginas
 const Login = lazy(() => import("./pages/public/Login"));
@@ -23,76 +21,64 @@ const PrivateRoute = ({ children }) => {
 
 export default function Router() {
   return (
-    <AuthProvider>
-      <CustomThemeProvider>
-        <FinanceProvider>
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              {/* ROTA PÚBLICA */}
-              <Route path="/login" element={<Login />} />
+    <Suspense fallback={<Loading />}>
+      <Routes>
+        {/* ROTA PÚBLICA */}
+        <Route path="/login" element={<Login />} />
 
-              {/* ROTAS PRIVADAS (Com o Layout Novo) */}
-              <Route
-                path="/"
-                element={
-                  <PrivateRoute>
-                    <AppLayout
-                      title="Dashboard"
-                      subtitle="Visão geral das finanças"
-                    >
-                      <Dashboard />
-                    </AppLayout>
-                  </PrivateRoute>
-                }
-              />
+        {/* ROTAS PRIVADAS (Com o Layout Novo) */}
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <AppLayout title="Dashboard" subtitle="Visão geral das finanças">
+                <Dashboard />
+              </AppLayout>
+            </PrivateRoute>
+          }
+        />
 
-              <Route
-                path="/categories"
-                element={
-                  <PrivateRoute>
-                    <AppLayout
-                      title="Categorias"
-                      subtitle="Gerencie seus grupos de gastos"
-                    >
-                      <Categories />
-                    </AppLayout>
-                  </PrivateRoute>
-                }
-              />
+        <Route
+          path="/categories"
+          element={
+            <PrivateRoute>
+              <AppLayout
+                title="Categorias"
+                subtitle="Gerencie seus grupos de gastos"
+              >
+                <Categories />
+              </AppLayout>
+            </PrivateRoute>
+          }
+        />
 
-              <Route
-                path="/settings"
-                element={
-                  <PrivateRoute>
-                    <AppLayout
-                      title="Configurações"
-                      subtitle="Personalize sua experiência"
-                    >
-                      <Settings />
-                    </AppLayout>
-                  </PrivateRoute>
-                }
-              />
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <AppLayout
+                title="Configurações"
+                subtitle="Personalize sua experiência"
+              >
+                <Settings />
+              </AppLayout>
+            </PrivateRoute>
+          }
+        />
 
-              <Route
-                path="/admin"
-                element={
-                  <PrivateRoute>
-                    <AppLayout
-                      title="Painel Admin"
-                      subtitle="Controle do sistema"
-                    >
-                      <AdminPanel />
-                    </AppLayout>
-                  </PrivateRoute>
-                }
-              />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute>
+              <AppLayout title="Painel Admin" subtitle="Controle do sistema">
+                <AdminPanel />
+              </AppLayout>
+            </PrivateRoute>
+          }
+        />
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </FinanceProvider>
-      </CustomThemeProvider>
-    </AuthProvider>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }

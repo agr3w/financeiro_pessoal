@@ -26,12 +26,11 @@ export default function Footer() {
     <Box
       component="footer"
       sx={{
-        py: 4,
-        mt: 4,
+        bgcolor: "background.paper",
         textAlign: "center",
-        opacity: 0.8,
         transition: "opacity 0.3s",
         "&:hover": { opacity: 1 },
+        p: 3,
       }}
     >
       <Divider

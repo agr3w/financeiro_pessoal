@@ -68,7 +68,7 @@ export default function AdminPanel() {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 10 }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 10, pt: 4 }}>
       <Container maxWidth="lg">
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
