@@ -1,7 +1,5 @@
 import React, { useContext, useState } from "react"; // Adicione useState aqui se faltar
 import { Container, Grid, Typography, Box, Button } from "@mui/material";
-import Header from "../../components/layout/Header"; // <--- Importe o novo Header
-import Footer from "../../components/layout/Footer"; // <--- Importe o Footer
 import MonthSelector from "../../components/ui/MonthSelector";
 import DashboardStats from "../../sections/finance/DashboardStats";
 import CashFlowTable from "../../sections/finance/CashFlowTable";
@@ -18,7 +16,6 @@ export default function Dashboard() {
   const [isPlanModalOpen, setPlanModalOpen] = useState(false);
 
   return (
-    // Layout Flex para empurrar o Footer
     <Box
       sx={{
         minHeight: "100vh",
@@ -102,8 +99,6 @@ export default function Dashboard() {
         onClose={() => setPlanModalOpen(false)}
       />
 
-      {/* FOOTER AQUI */}
-      <Footer />
     </Box>
   );
 }

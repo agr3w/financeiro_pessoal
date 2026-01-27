@@ -25,8 +25,6 @@ import {
   Link as LinkIcon,
   Close,
 } from "@mui/icons-material";
-import Header from "../../components/layout/Header";
-import Footer from "../../components/layout/Footer";
 import { useThemeContext } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 
@@ -342,8 +340,6 @@ export default function Settings() {
           </Grid>
         </Grid>
       </Container>
-
-      <Footer />
 
       {/* --- MODAL DE TROCAR SENHA --- */}
       <Dialog open={openPassModal} onClose={() => setOpenPassModal(false)}>
