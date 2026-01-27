@@ -7,19 +7,17 @@ export default function Footer() {
   const theme = useTheme();
   const currentYear = new Date().getFullYear();
 
-  // Links do Weslley (Troque pelos seus reais!)
   const socialLinks = [
     {
       icon: <Code fontSize="small" />,
       url: "https://weslleykampa.netlify.app/",
       label: "Site do Weslley",
-    }, // Puxei do seu user
+    }, 
     {
       icon: <LinkedIn fontSize="small" />,
       url: "https://www.linkedin.com/in/weslley-luiz-kampa/",
       label: "LinkedIn",
     },
-    // { icon: <Instagram fontSize="small" />, url: 'https://instagram.com/seu-perfil', label: 'Instagram' },
   ];
 
   return (
