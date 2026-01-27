@@ -152,8 +152,6 @@ export default function Settings() {
         flexDirection: "column",
       }}
     >
-      <Header title="Configurações" />
-
       <Container maxWidth="md" sx={{ flexGrow: 1 }}>
         <Grid container spacing={3}>
           {/* 1. APARÊNCIA */}

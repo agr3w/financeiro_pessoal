@@ -129,11 +129,6 @@ export default function Categories() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 10 }}>
-      <Header
-        title="Gerenciar Categorias"
-        subtitle="Personalize como você organiza seu dinheiro"
-      />
-
       <Container maxWidth="md">
         <Grid container spacing={2}>
           {categories.map((cat) => {

@@ -69,11 +69,6 @@ export default function AdminPanel() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default", pb: 10 }}>
-      <Header
-        title="Painel do Administrador"
-        subtitle="Gerenciamento Global & Atualizações"
-      />
-
       <Container maxWidth="lg">
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>

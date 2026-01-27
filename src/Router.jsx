@@ -1,70 +1,98 @@
 import React, { Suspense, lazy } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { FinanceProvider } from "./context/FinanceContext";
+import { CustomThemeProvider } from "./context/ThemeContext";
 import Loading from "./components/ui/Loading";
-import ErrorBoundary from "./components/ui/ErrorBoundary"; // Importe aqui
+import AppLayout from "./components/layout/AppLayout"; // <--- Importe o Layout
 
-// --- LAZY IMPORTS (Carregamento Dinâmico) ---
-const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
-const Settings = lazy(() => import("./pages/admin/Settings"));
-const Categories = lazy(() => import("./pages/admin/Categories"));
+// Lazy loading das páginas
 const Login = lazy(() => import("./pages/public/Login"));
-const NotFound = lazy(() => import("./pages/public/NotFound"));
+const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
+const Categories = lazy(() => import("./pages/admin/Categories"));
+const Settings = lazy(() => import("./pages/admin/Settings"));
 const AdminPanel = lazy(() => import("./pages/admin/AdminPanel"));
+const NotFound = lazy(() => import("./pages/public/NotFound"));
 
+// Componente para proteger rotas privadas
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
-  // Se o user estiver undefined (ainda carregando auth), poderia mostrar loading também
-  return user ? children : <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
+  return children;
 };
 
 export default function Router() {
   return (
-    // Adicione o ErrorBoundary envolvendo o Suspense
-    <ErrorBoundary>
-      <Suspense fallback={<Loading message="Organizando suas finanças..." />}>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <CustomThemeProvider>
+        <FinanceProvider>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              {/* ROTA PÚBLICA */}
+              <Route path="/login" element={<Login />} />
 
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
+              {/* ROTAS PRIVADAS (Com o Layout Novo) */}
+              <Route
+                path="/"
+                element={
+                  <PrivateRoute>
+                    <AppLayout
+                      title="Dashboard"
+                      subtitle="Visão geral das finanças"
+                    >
+                      <Dashboard />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
 
-          <Route
-            path="/settings"
-            element={
-              <PrivateRoute>
-                <Settings />
-              </PrivateRoute>
-            }
-          />
+              <Route
+                path="/categories"
+                element={
+                  <PrivateRoute>
+                    <AppLayout
+                      title="Categorias"
+                      subtitle="Gerencie seus grupos de gastos"
+                    >
+                      <Categories />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
 
-          <Route
-            path="/categories"
-            element={
-              <PrivateRoute>
-                <Categories />
-              </PrivateRoute>
-            }
-          />
+              <Route
+                path="/settings"
+                element={
+                  <PrivateRoute>
+                    <AppLayout
+                      title="Configurações"
+                      subtitle="Personalize sua experiência"
+                    >
+                      <Settings />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
 
-          <Route path="*" element={<NotFound />} />
+              <Route
+                path="/admin"
+                element={
+                  <PrivateRoute>
+                    <AppLayout
+                      title="Painel Admin"
+                      subtitle="Controle do sistema"
+                    >
+                      <AdminPanel />
+                    </AppLayout>
+                  </PrivateRoute>
+                }
+              />
 
-          <Route
-            path="/admin"
-            element={
-              <PrivateRoute>
-                <AdminPanel />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </Suspense>
-    </ErrorBoundary>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </FinanceProvider>
+      </CustomThemeProvider>
+    </AuthProvider>
   );
 }

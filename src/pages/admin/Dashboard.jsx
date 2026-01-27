@@ -27,9 +27,6 @@ export default function Dashboard() {
         bgcolor: "background.default",
       }}
     >
-      {/* 1. NOVO HEADER */}
-      <Header />
-
       {/* Conteúdo Expansível (flexGrow: 1) */}
       <Container maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
         {/* Seletor de Mês */}
