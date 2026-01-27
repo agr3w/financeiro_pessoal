@@ -8,6 +8,7 @@ import {
   deleteDoc,
   updateDoc,
   setDoc,
+  getDoc, // <--- Adicionei o getDoc aqui
   Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -281,15 +282,33 @@ export const subscribeToSystemSettings = (callback) => {
 export const checkAdminPermission = async (email) => {
   if (!email) return false;
 
-  // Lista de e-mails permitidos.
-  // IMPORTANTE: Insira aqui o e-mail que você usa para testar
-  const ADMIN_EMAILS = [
-    "test@test.com",
-    "admin@admin.com",
-    "weslley@admin.com",
-  ];
+  try {
+    // Busca o documento 'permissions' dentro da coleção 'system_config'
+    const docRef = doc(db, "system_config", "permissions");
+    const docSnap = await getDoc(docRef);
 
-  return ADMIN_EMAILS.includes(email.toLowerCase());
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const admins = data.admins; 
+      
+      const emailToCheck = email.toLowerCase().trim();
+
+      // Verifica se o campo 'admins' é um Array (vários admins)
+      if (Array.isArray(admins)) {
+        return admins.map(a => a.toLowerCase().trim()).includes(emailToCheck);
+      }
+      
+      // Verifica se é apenas uma String (um único admin, como na sua foto)
+      if (typeof admins === 'string') {
+        return admins.toLowerCase().trim() === emailToCheck;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Erro ao verificar permissão de admin:", error);
+    return false;
+  }
 };
 
 // ========================================================

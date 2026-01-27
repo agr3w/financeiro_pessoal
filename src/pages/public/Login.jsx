@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react"; // Adicione useContext
+import React, { useState, useContext } from "react";
 import {
   Container,
   Paper,
@@ -10,9 +10,10 @@ import {
   Chip,
 } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
-import { FinanceContext } from "../../context/FinanceContext"; // Importe o contexto
+import { FinanceContext } from "../../context/FinanceContext";
+import { checkAdminPermission } from "../../services/finance";
 import { useNavigate } from "react-router-dom";
-import { Engineering } from "@mui/icons-material"; // Ícone de obra
+import { Engineering } from "@mui/icons-material";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -22,38 +23,33 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const { login, signup } = useAuth();
-  const { maintenanceMode } = useContext(FinanceContext); // Pega o status
+  const { maintenanceMode } = useContext(FinanceContext);
   const navigate = useNavigate();
-
-  // EMAIL DO ADMIN (Deve ser o mesmo do AdminPanel)
-  const ADMIN_EMAIL = "test@test.com"; // ou weslley@admin.com, etc.
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
-    // --- LÓGICA DE BLOQUEIO AJUSTADA ---
-    // Se estiver em manutenção E o e-mail digitado NÃO for o do admin
-    if (
-      maintenanceMode &&
-      email.trim().toLowerCase() !== ADMIN_EMAIL.toLowerCase()
-    ) {
-      setError("SISTEMA EM MANUTENÇÃO: Apenas administradores podem acessar.");
-      return; // Interrompe o login aqui, nem chama o Firebase Auth
-    }
-    // -----------------------------------
-
     setLoading(true);
 
     try {
+      if (maintenanceMode) {
+        const isAdmin = await checkAdminPermission(email);
+
+        if (!isAdmin) {
+          setError("SISTEMA EM MANUTENÇÃO: Apenas administradores podem acessar.");
+          setLoading(false);
+          return;
+        }
+      }
+
       if (isLogin) {
         await login(email, password);
       } else {
-        // Também bloqueia criação de conta em manutenção (redundância de segurança)
         if (maintenanceMode) {
-          throw new Error(
-            "O registro de novos usuários está suspenso durante a manutenção.",
-          );
+          const isAdmin = await checkAdminPermission(email);
+          if (!isAdmin) {
+            throw new Error("O registro de novos usuários está suspenso durante a manutenção.");
+          }
         }
         await signup(email, password);
       }
@@ -76,7 +72,6 @@ export default function Login() {
       }}
     >
       <Container maxWidth="xs">
-        {/* AVISO VISUAL DE MANUTENÇÃO */}
         {maintenanceMode && (
           <Box textAlign="center" mb={2}>
             <Chip
@@ -116,7 +111,6 @@ export default function Login() {
             </Alert>
           )}
 
-          {/* Exibe mensagem amigável se estiver em manutenção e sem erro ainda */}
           {maintenanceMode && !error && (
             <Alert severity="info" sx={{ width: "100%", mb: 2 }}>
               O site está temporariamente fechado para usuários. Tente novamente
