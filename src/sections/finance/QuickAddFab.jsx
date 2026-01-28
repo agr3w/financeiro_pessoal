@@ -6,10 +6,11 @@ import {
 } from '@mui/material';
 import {
   Add, Close, Fastfood, DirectionsCar, ShoppingBag,
-  Receipt, Bolt, Star, CheckCircle, SportsEsports,
+  Bolt, Star, CheckCircle, SportsEsports,
   FitnessCenter, Pets, School, Flight,
   Work, QrCode, AccountBalance, Savings, AttachMoney,
-  CreditCard, LocalDining, Money
+  CreditCard, LocalDining, Money, Groups, MedicalServices, // Novos ícones
+  Home, Build, LocalGasStation // Novos ícones
 } from '@mui/icons-material';
 import { FinanceContext } from '../../context/FinanceContext';
 import { useTheme, alpha } from '@mui/material/styles';
@@ -34,26 +35,27 @@ const PAYMENT_METHODS = [
   { id: 'voucher', label: 'Vale', icon: <LocalDining fontSize="small" /> },
 ];
 
-const getIcon = (key) => {
-  const props = { fontSize: "small" };
-  const map = {
-    'food': <Fastfood {...props} />,
-    'transport': <DirectionsCar {...props} />,
-    'shopping': <ShoppingBag {...props} />,
-    'bills': <Bolt {...props} />,
-    'entertainment': <SportsEsports {...props} />,
-    'health': <FitnessCenter {...props} />,
-    'pets': <Pets {...props} />,
-    'education': <School {...props} />,
-    'travel': <Flight {...props} />,
-    'salary': <Work {...props} />,
-    'pix': <QrCode {...props} />,
-    'loan': <AccountBalance {...props} />,
-    'extra': <Savings {...props} />,
-    'money': <AttachMoney {...props} />,
-    'star': <Star {...props} />
-  };
-  return map[key] || <Star {...props} />;
+export const ICONS_MAP = {
+  'star': <Star fontSize="small" />,
+  'food': <Fastfood fontSize="small" />,
+  'transport': <DirectionsCar fontSize="small" />,
+  'shopping': <ShoppingBag fontSize="small" />,
+  'bills': <Bolt fontSize="small" />,
+  'entertainment': <SportsEsports fontSize="small" />,
+  'health': <FitnessCenter fontSize="small" />,
+  'pets': <Pets fontSize="small" />,
+  'education': <School fontSize="small" />,
+  'travel': <Flight fontSize="small" />,
+  'salary': <Work fontSize="small" />,
+  'pix': <QrCode fontSize="small" />,
+  'loan': <AccountBalance fontSize="small" />,
+  'extra': <Savings fontSize="small" />,
+  'money': <AttachMoney fontSize="small" />,
+  'family': <Groups fontSize="small" />,
+  'medical': <MedicalServices fontSize="small" />,
+  'home': <Home fontSize="small" />,
+  'tools': <Build fontSize="small" />,
+  'fuel': <LocalGasStation fontSize="small" />
 };
 
 export default function QuickAddFab() {
@@ -62,24 +64,40 @@ export default function QuickAddFab() {
   const fullScreen = useMediaQuery(theme.breakpoints.down('xs'));
 
   const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState('');
+  const [amountString, setAmountString] = useState('');
   const [type, setType] = useState('expense');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
+  const handleAmountChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é número
+    if (value === '') {
+      setAmountString('');
+      return;
+    }
+    setAmountString(value);
+  };
+
+  const getDisplayValue = () => {
+    if (!amountString) return '';
+    const numberVal = parseInt(amountString) / 100;
+    return numberVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const handleSave = async () => {
-    if (!amount || !category) return;
+    if (!amountString || !category) return;
 
     const currentList = type === 'expense' ? categories : INCOME_CATEGORIES;
     const selectedCat = currentList.find(c => c.label === category || c.id === category);
     const catLabel = selectedCat ? selectedCat.label : category;
     const finalDate = new Date(date + 'T12:00:00');
+    const finalAmount = parseInt(amountString) / 100;
 
     await addTransaction({
       label: description || catLabel,
-      amount: parseFloat(amount),
+      amount: finalAmount,
       type: type,
       category: catLabel,
       paymentMethod: type === 'expense' ? paymentMethod : null,
@@ -87,7 +105,7 @@ export default function QuickAddFab() {
     });
 
     setOpen(false);
-    setAmount('');
+    setAmountString('');
     setCategory('');
     setDescription('');
     setPaymentMethod('pix');
@@ -181,8 +199,9 @@ export default function QuickAddFab() {
 
             {/* 2. Valor */}
             <TextField
-              autoFocus variant="standard" placeholder="0,00" type="number"
-              value={amount} onChange={(e) => setAmount(e.target.value)}
+              autoFocus variant="standard" placeholder="0,00"
+              value={getDisplayValue()}
+              onChange={handleAmountChange}
               InputProps={{
                 disableUnderline: true,
                 startAdornment: (<InputAdornment position="start"><Typography variant="h4" color="text.secondary">R$</Typography></InputAdornment>),
@@ -215,7 +234,7 @@ export default function QuickAddFab() {
                           border: isSelected ? 'none' : `1px solid ${theme.palette.divider}`
                         }}
                       >
-                        {isSelected ? <CheckCircle /> : getIcon(cat.iconKey)}
+                        {isSelected ? <CheckCircle /> : ICONS_MAP[cat.iconKey] || <Star fontSize="small" />}
                       </Box>
                       <Typography variant="caption" noWrap sx={{ mt: 1, fontWeight: isSelected ? 700 : 500, color: isSelected ? catColor : 'text.secondary', maxWidth: '100%', fontSize: '0.7rem' }}>{cat.label}</Typography>
                     </Grid>
@@ -285,7 +304,7 @@ export default function QuickAddFab() {
 
             {/* BOTÃO CONFIRMAR */}
             <Button
-              fullWidth variant="contained" size="large" onClick={handleSave} disabled={!amount || !category}
+              fullWidth variant="contained" size="large" onClick={handleSave} disabled={!amountString || !category}
               sx={{
                 py: 2, bgcolor: activeColor, color: '#fff', borderRadius: 3, fontSize: '1rem',
                 boxShadow: `0 8px 20px ${alpha(activeColor, 0.3)}`,

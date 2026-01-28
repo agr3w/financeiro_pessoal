@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Container,
   Grid,
@@ -15,6 +15,8 @@ import {
   DialogActions,
   Alert,
   InputAdornment,
+  Avatar,
+  Chip
 } from "@mui/material";
 import {
   DarkMode,
@@ -24,9 +26,16 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   Close,
+  Groups,
+  CheckCircle,
+  Visibility,
+  Percent
 } from "@mui/icons-material";
 import { useThemeContext } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
+import { FinanceContext } from "../../context/FinanceContext"; // Importar FinanceContext
+import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore'; 
+import { db } from '../../services/firebase';
 
 // Sugestões de Imagens (Links diretos do Unsplash)
 const WALLPAPER_PRESETS = [
@@ -89,9 +98,10 @@ const SettingItem = ({ icon, title, description, action, danger }) => (
 );
 
 export default function Settings() {
-  const { mode, toggleColorMode, bgImage, setCustomBackground } =
+  const { mode, toggleColorMode, bgImage, setCustomBackground, dashboardPrefs, toggleDashboardPref } =
     useThemeContext();
-  const { updateUserPassword, deleteUserAccount } = useAuth();
+  const { updateUserPassword, deleteUserAccount, user } = useAuth();
+  const { partnerData } = useContext(FinanceContext); // Pega dados do parceiro
 
   // Estados dos Modais
   const [openPassModal, setOpenPassModal] = useState(false);
@@ -105,7 +115,52 @@ export default function Settings() {
   // Estado para URL de imagem personalizada
   const [customUrl, setCustomUrl] = useState("");
 
+  // Estados para Vinculação
+  const [partnerEmail, setPartnerEmail] = useState('');
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkMsg, setLinkMsg] = useState({ type: '', text: '' });
+
+
   // --- HANDLERS ---
+  const handleLinkPartner = async () => {
+    if (!partnerEmail) return;
+    setLinkLoading(true);
+    setLinkMsg({ type: '', text: '' });
+
+    try {
+        // 1. Busca usuário pelo email
+        const q = query(collection(db, 'users'), where('email', '==', partnerEmail));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            setLinkMsg({ type: 'error', text: 'Usuário não encontrado. Verifique o e-mail.' });
+            setLinkLoading(false);
+            return;
+        }
+
+        const partnerDoc = querySnapshot.docs[0];
+        const partnerUid = partnerDoc.id;
+
+        if (partnerUid === user.uid) {
+            setLinkMsg({ type: 'error', text: 'Você não pode vincular a si mesmo.' });
+            setLinkLoading(false);
+            return;
+        }
+
+        // 2. Atualiza o MEU documento com o ID dele
+        await updateDoc(doc(db, 'users', user.uid), { partnerUid: partnerUid });
+
+        // 3. Atualiza o documento DELE com o MEU ID (Vínculo Bidirecional Automático)
+        await updateDoc(doc(db, 'users', partnerUid), { partnerUid: user.uid });
+
+        setLinkMsg({ type: 'success', text: 'Contas vinculadas com sucesso! Recarregue a página.' });
+        setPartnerEmail('');
+    } catch (error) {
+        console.error(error);
+        setLinkMsg({ type: 'error', text: 'Erro ao vincular. Tente novamente.' });
+    }
+    setLinkLoading(false);
+  };
 
   const handleUpdatePassword = async () => {
     setStatusMsg({ type: "", text: "" });
@@ -154,11 +209,64 @@ export default function Settings() {
     >
       <Container maxWidth="md" sx={{ flexGrow: 1 }}>
         <Grid container spacing={3}>
-          {/* 1. APARÊNCIA */}
+          {/* 0. MODO FAMÍLIA (NOVO) */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3, borderRadius: 3 }}>
+                <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                    <Groups color="primary" />
+                    <Typography variant="h6" fontFamily="serif">
+                        Modo Família
+                    </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" mb={3}>
+                    Compartilhe gastos e receitas com outra pessoa em tempo real.
+                </Typography>
+
+                {partnerData ? (
+                    // SE JÁ TIVER PARCEIRO
+                    <Box bgcolor="action.hover" p={2} borderRadius={3} display="flex" alignItems="center" justifyContent="space-between">
+                        <Box display="flex" alignItems="center" gap={2}>
+                            <Avatar sx={{ bgcolor: 'secondary.main' }}>{partnerData.displayName?.[0] || 'P'}</Avatar>
+                            <Box>
+                                <Typography variant="subtitle2" fontWeight="bold">Conectado com</Typography>
+                                <Typography variant="body1">{partnerData.displayName || partnerData.email}</Typography>
+                            </Box>
+                        </Box>
+                        <Chip label="Ativo" color="success" size="small" icon={<CheckCircle />} />
+                    </Box>
+                ) : (
+                    // SE NÃO TIVER PARCEIRO (FORMULÁRIO)
+                    <Box>
+                        {linkMsg.text && (
+                            <Alert severity={linkMsg.type} sx={{ mb: 2, borderRadius: 2 }}>{linkMsg.text}</Alert>
+                        )}
+                        <Box display="flex" gap={1}>
+                            <TextField 
+                                fullWidth 
+                                size="small" 
+                                placeholder="E-mail do parceiro(a)"
+                                value={partnerEmail}
+                                onChange={(e) => setPartnerEmail(e.target.value)}
+                            />
+                            <Button 
+                                variant="contained" 
+                                onClick={handleLinkPartner}
+                                disabled={linkLoading || !partnerEmail}
+                                sx={{ minWidth: 100 }}
+                            >
+                                {linkLoading ? '...' : 'Vincular'}
+                            </Button>
+                        </Box>
+                    </Box>
+                )}
+            </Paper>
+          </Grid>
+
+          {/* 1. APARÊNCIA & PREFS */}
           <Grid item xs={12}>
             <Paper sx={{ p: 3, borderRadius: 3 }}>
               <Typography variant="h6" fontFamily="serif" mb={2}>
-                Visual
+                Preferências
               </Typography>
 
               <SettingItem
@@ -170,6 +278,34 @@ export default function Settings() {
                     checked={mode === "dark"}
                     onChange={toggleColorMode}
                   />
+                }
+              />
+              
+              <Divider sx={{ my: 1 }} />
+              
+              <SettingItem
+                icon={<Visibility />}
+                title="Modo Privacidade"
+                description="Ocultar valores monetários no painel"
+                action={
+                    <Switch 
+                        checked={dashboardPrefs.privacyMode} 
+                        onChange={() => toggleDashboardPref('privacyMode')} 
+                    />
+                }
+              />
+              
+              <Divider sx={{ my: 1 }} />
+
+              <SettingItem
+                icon={<Percent />}
+                title="Disponibilidade %"
+                description="Mostrar saldo restante em porcentagem"
+                action={
+                    <Switch 
+                        checked={dashboardPrefs.showAvailabilityAsPercentage} 
+                        onChange={() => toggleDashboardPref('showAvailabilityAsPercentage')} 
+                    />
                 }
               />
 
